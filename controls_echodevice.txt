@@ -1,0 +1,4 @@
+DEL ./FHEM/37_echodevice.pm
+UPD 2019-01-07_12:00:00 187327 FHEM/37_echodevice.pm
+DEL ./www/images/echodevice/echo.svg
+UPD 2019-01-07_12:00:00 24155 www/images/echodevice/echo.svg
