@@ -1,6 +1,10 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
+# 2019.01.11 v0.0.51
+# - FEATURE: Unterstützung AppRegisterLogin per NPM
+# - CHANGE:  https://forum.fhem.de/index.php/topic,82631.msg869460.html#msg869460
+#
 # 2018.12.02 v0.0.50
 # - FEATURE: Unterstützung A32DDESGESSHZA Echo Dot Gen3
 #
@@ -292,7 +296,7 @@
 
 package main;
 
-use strict;
+#use strict;
 use Time::Local;
 use Encode;
 use Encode qw/from_to/;
@@ -305,7 +309,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.50";
+my $ModulVersion     = "0.0.51";
 my $AWSPythonVersion = "0.0.3";
 
 ##############################################################################
@@ -329,6 +333,7 @@ sub echodevice_Initialize($) {
 							"intervalsettings ".
 							"intervallogin ".
 							"intervalvoice:slider,0,1,100 ".
+							"speak_volume:slider,0,1,100 ".
 							"server ".
 							"cookie ".
 							"reminder_delay ".
@@ -338,6 +343,12 @@ sub echodevice_Initialize($) {
 							"browser_language ".
 							"browser_save_data:0,1 ".
 							"browser_useragent_random:0,1 ".
+							"npm_proxy_port ".
+							"npm_proxy_ip ".
+							"npm_login:0,1 ".
+							"npm_refresh_intervall ".
+							"npm_bin ".
+							"npm_bin_node ".
 							$readingFnAttributes;
 }
 
@@ -622,7 +633,7 @@ sub echodevice_Set($@) {
 	if($hash->{model} eq "ACCOUNT") {
 		$usage .= 'login:noArg loginwithcaptcha autocreate_devices:noArg item_shopping_add item_task_add login2FACode ';
 		$usage .= 'AWS_Access_Key AWS_Secret_Key TTS_IPAddress TTS_Filename TTS_TuneIn POM_TuneIn POM_IPAddress POM_Filename AWS_OutputFormat:mp3,ogg_vorbis,pcm textmessage ';# if(defined($hash->{helper}{".COMMSID"}));
-		$usage .= 'config_address_from config_address_to config_address_between ';
+		$usage .= 'config_address_from config_address_to config_address_between NPM_install:noArg NPM_login:new,refresh ';
 		
 		# Einkaufsliste
 		my $ShoppingListe = ReadingsVal($name, "list_SHOPPING_ITEM", "");
@@ -726,6 +737,16 @@ sub echodevice_Set($@) {
 
 	#return echodevice_Login($hash) if($command eq "login");
 	return echodevice_SendLoginCommand($hash,"cookielogin1","") if($command eq "login");
+	
+	if($command eq "NPM_install"){ 
+		return echodevice_NPMInstall();
+	}
+
+	if($command eq "NPM_login"){ 
+		return "No argument given."        		 if ( !defined($a[0]) );
+		return echodevice_NPMLoginNew($hash)     if ($a[0] eq "new") ;
+		return echodevice_NPMLoginRefresh($hash) if ($a[0] eq "refresh");
+	}
 	
 	if($command eq "loginwithcaptcha"){
 		return "HTML Result file does exits. Pleas activate the attribut browser_save_data" if ((!-e $FW_dir . "/echodevice/results/". $name . "_cookielogin4.html"));
@@ -1832,8 +1853,9 @@ sub echodevice_SendCommand($$$) {
 	
 		my $sequenceJson;
 	
-		if(ReadingsVal($name , "volume", 50) < ReadingsVal($name , "volume_alarm", 50)) {
-			$SendData = '{"behaviorId":"PREVIEW","sequenceJson":"{\"@type\":\"com.amazon.alexa.behaviors.model.Sequence\",\"startNode\":{\"@type\":\"com.amazon.alexa.behaviors.model.SerialNode\",\"nodesToExecute\":[{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.DeviceControls.Volume\",\"operationPayload\":{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"locale\":\"de-DE\",\"value\":\"'.ReadingsVal($name , "volume_alarm", 50).'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\"}},{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.Speak\",\"operationPayload\":{\"locale\":\"de-DE\",\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\",\"textToSpeak\":\"'.$SendData.'\"}},{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.DeviceControls.Volume\",\"operationPayload\":{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"locale\":\"de-DE\",\"value\":\"'.ReadingsVal($name , "volume", 50).'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\"}}]}}","status":"ENABLED"}'
+		if(AttrVal($name,"speak_volume",0) > 0){
+		#if(ReadingsVal($name , "volume", 50) < ReadingsVal($name , "volume_alarm", 50)) {
+			$SendData = '{"behaviorId":"PREVIEW","sequenceJson":"{\"@type\":\"com.amazon.alexa.behaviors.model.Sequence\",\"startNode\":{\"@type\":\"com.amazon.alexa.behaviors.model.SerialNode\",\"nodesToExecute\":[{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.DeviceControls.Volume\",\"operationPayload\":{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"locale\":\"de-DE\",\"value\":\"'.AttrVal($name , "speak_volume", 50).'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\"}},{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.Speak\",\"operationPayload\":{\"locale\":\"de-DE\",\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\",\"textToSpeak\":\"'.$SendData.'\"}},{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.DeviceControls.Volume\",\"operationPayload\":{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"locale\":\"de-DE\",\"value\":\"'.ReadingsVal($name , "volume", 50).'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\"}}]}}","status":"ENABLED"}'
 		}
 		else {
 			$SendData = echodevice_getsequenceJson($hash,$type,$SendData);
@@ -3705,9 +3727,10 @@ sub echodevice_FirstStart($) {
 
 sub echodevice_LoginStart($) {
 	my ($hash) = @_;
-	my $name = $hash->{NAME};
-	my $nextupdate  = int(AttrVal($name,"intervallogin",60));
-	my $DeviceState = "";
+	my $name                  = $hash->{NAME};
+	my $nextupdate            = int(AttrVal($name,"intervallogin",60));
+	my $npm_refresh_intervall = int(AttrVal($name,"npm_refresh_intervall",6000));
+	my $DeviceState           = "";
 
 	# Bestehenden Timer löschen
 	RemoveInternalTimer($hash, "echodevice_LoginStart");
@@ -3731,6 +3754,18 @@ sub echodevice_LoginStart($) {
 		}
 		elsif ($hash->{STATE} eq "connected but loginerror") {
 			echodevice_SendLoginCommand($hash,"cookielogin6","");
+		}
+		else {
+			if (AttrVal($name,"npm_login",0) == 1) { 
+				# Refresh COOKIE
+				if (ReadingsAge($name,'.COOKIE',0) > $npm_refresh_intervall) {
+					Log3 $name, 3, "[$name] [echodevice_LoginStart] Alter COOKIE=" . ReadingsAge($name,'.COOKIE',0) ."/$npm_refresh_intervall Refresh Cookie!";
+					echodevice_NPMLoginRefresh($hash);
+				}
+				else {
+					Log3 $name, 4, "[$name] [echodevice_LoginStart] Alter COOKIE=" . ReadingsAge($name,'.COOKIE',0) . "/$npm_refresh_intervall";
+				}
+			}
 		}
 	}
 
@@ -4047,6 +4082,285 @@ sub echodevice_getsequenceJson($$$) {
 sub echodevice_refreshvoice($) {
 	my ($hash) = @_;
 	echodevice_SendCommand($hash,"activities","");
+}
+
+##########################
+# NPM HELPER
+##########################
+sub echodevice_NPMInstall(){
+
+	my $InstallResult = '<html><p><strong>Installationsergebnis</strong></p><br>';
+	my $npm_bin = AttrVal($name,"npm_bin","/usr/bin/npm");
+	
+	# Prüfen ob npm installiert ist
+	if (!(-e $npm_bin)) {
+		$InstallResult .= '<p>Das Bin <strong>' . $npm_bin . '</strong> wurde nicht gefunden. Bitte zuerst das Linux Paket NPM installieren. Folgenden Befehl koennt Ihr hier verwenden:</p>';
+		$InstallResult .= '<p><strong><font color="blue">sudo apt-get install npm</font></strong></p><br>';
+		$InstallResult .= '<p>Sollte das Linux Paket NPM schon installiert sein, muesst Ihr ggf. das Attribut "<strong>npm_bin</strong>" entsprechend anpassen. Standard=/usr/bin/npm</p>';
+		$InstallResult .= '<br><form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form>';
+		$InstallResult .= "</html>";
+		$InstallResult =~ s/'/&#x0027/g;
+		Log3 $name, 3, "[$name] [echodevice_NPMInstall] " . $npm_bin . " not found" ;
+		return $InstallResult;
+	}
+
+	# Verzeichnis anlegen
+	mkdir("cache", 0777) unless(-d "cache" );
+	mkdir("cache/alexa-cookie", 0777) unless(-d "cache/alexa-cookie" );
+	mkdir("cache/alexa-cookie/node_modules", 0777) unless(-d "cache/alexa-cookie/node_modules" );
+	
+	# Prüfen ob schon eine Installation vorhanden ist ggf. Modul löschen
+	if (-e "cache/alexa-cookie/node_modules/alexa-cookie2/alexa-cookie.js") {
+		$InstallResult .= "Vorhandene Installation wird aktualisiert<br>";
+		unlink "cache/alexa-cookie/node_modules/alexa-cookie2/alexa-cookie.js";
+	}
+	else {$InstallResult .= "Installation wird angestartet<br>";}
+
+	open CMD,'-|','sudo ' . $npm_bin . ' install --prefix ./cache/alexa-cookie alexa-cookie2' or die $@;
+	my $line;
+	while (defined($line=<CMD>)) {$InstallResult .= $line. "<br>";}
+	close CMD;
+	
+	# Prüfen ob das alexa-cookie Modul vorhanden ist
+	if (-e "cache/alexa-cookie/node_modules/alexa-cookie2/alexa-cookie.js") {$InstallResult .= '<p><strong><font color="green">Installation erfolgreich durchgefuehrt</font></strong></p>';}
+	else {$InstallResult .= '<p><strong><font color="red">!!Installation fehlgeschlagen!!</font></strong></p>';}
+	
+	# Zurückbutton
+	$InstallResult .= '<br><form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form>';
+	$InstallResult .= "</html>";
+	$InstallResult =~ s/'/&#x0027/g;
+	
+	return $InstallResult;
+}
+
+sub echodevice_NPMLoginNew($){
+	my ($hash) = @_;
+	my $name = $hash->{NAME};
+	my $InstallResult = '<html><p><strong>Login Ergebnis</strong></p><br>';
+	my $npm_bin_node  = AttrVal($name,"npm_bin_node","/usr/bin/node");
+	
+	# Prüfen ob npm installiert ist
+	if (!(-e $npm_bin_node)) {
+		$InstallResult .= '<p>Das Bin <strong>' . $npm_bin_node . '</strong> wurde nicht gefunden. Bitte zuerst das Linux Paket NPM installieren. Folgenden Befehl koennt Ihr hier verwenden:</p>';
+		$InstallResult .= '<p><strong><font color="blue">sudo apt-get install npm</font></strong></p><br>';
+		$InstallResult .= '<p>Sollte das Linux Paket NPM schon installiert sein, muesst Ihr ggf. das Attribut "<strong>npm_bin_node</strong>" entsprechend anpassen. Standard=/usr/bin/node</p>';
+		$InstallResult .= '<br><form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form>';
+		$InstallResult .= "</html>";
+		$InstallResult =~ s/'/&#x0027/g;
+		Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] " . $npm_bin_node . " not found" ;
+		return $InstallResult;
+	}
+
+	# Prüfen ob das alexa-cookie Mdoul vorhanden ist
+	if (!(-e "cache/alexa-cookie/node_modules/alexa-cookie2/alexa-cookie.js")) {
+		$InstallResult .= '<p>Das alexa-cookie Modul wurde nicht gefunden. Bitte fuehrt am Amazon Account Device einen set "<strong>NPM_install</strong>" durch </p>';
+		$InstallResult .= '<br><form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form>';
+		$InstallResult .= "</html>";
+		$InstallResult =~ s/'/&#x0027/g;
+		Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] alexa-cookie modul not found" ;
+		return $InstallResult;
+	}
+	
+	my $ProxyPort = AttrVal($name,"npm_proxy_port","3002");
+	my $OwnIP;
+
+	# Eigene IP-Adresse ermitteln
+	my $cmdLine = 'ip -o addr show | awk \'/inet/ {print $2, $3, $4}\'';
+	my @ips = `$cmdLine`;	
+
+	foreach my $ipLine (@ips) {
+		my ($interface, undef, $ipParts) = split(' ', $ipLine);
+		my ($ip) = split('/', $ipParts);
+		if ($interface ne 'lo') {$OwnIP = $ip;}
+	}
+
+	my $ProxyIP   = AttrVal($name,"npm_proxy_ip",$OwnIP);
+	
+	my $SkriptContent  = "alexaCookie = require('alexa-cookie2');" . "\n";
+	$SkriptContent    .= "fs = require('fs');" . "\n";
+	$SkriptContent    .= "" . "\n";
+	$SkriptContent    .= "const config = {" . "\n";
+	$SkriptContent    .= "    logger: console.log," . "\n";
+	$SkriptContent    .= "    setupProxy: true," . "\n";
+	$SkriptContent    .= "    proxyOwnIp: '$ProxyIP'," . "\n";
+	$SkriptContent    .= "    proxyPort: $ProxyPort," . "\n";
+	$SkriptContent    .= "    proxyListenBind: '$ProxyIP'," . "\n";
+	$SkriptContent    .= "    proxyLogLevel: 'info'" . "\n";
+	$SkriptContent    .= "};" . "\n";
+	$SkriptContent    .= "" . "\n";
+	$SkriptContent    .= "alexaCookie.generateAlexaCookie('" . uri_escape(echodevice_decrypt($hash->{helper}{".USER"})) . "', '" . uri_escape(echodevice_decrypt($hash->{helper}{".PASSWORD"})) . "', config, (err, result) => {" . "\n";
+	$SkriptContent    .= "    console.log('RESULT: ' + err + ' / ' + JSON.stringify(result));" . "\n";
+	$SkriptContent    .= "    fs.writeFileSync('./cache/alexa-cookie/result.json', JSON.stringify(result) , 'utf-8'); " . "\n";
+	$SkriptContent    .= "    if (result && result.csrf) {" . "\n";
+	$SkriptContent    .= "        alexaCookie.stopProxyServer();" . "\n";
+	$SkriptContent    .= "    }" . "\n";
+	$SkriptContent    .= "});" . "\n";
+	$SkriptContent    .= "" . "\n";
+	
+	my $filename  = "cache/alexa-cookie/create-cookie.js";
+
+	# Altes Skript löschen
+	if ((-e $filename)) {unlink $filename};
+	
+	# Neues Skript anlegen
+	open(FH, ">$filename");
+	print FH $SkriptContent;
+	close(FH);
+
+	my $CreatCookie;
+
+	# Infos festhalten
+	readingsSingleUpdate( $hash, "amazon_refreshtoken", "wird erzeugt",1 );
+	
+	# Skript ausführen
+	open CMD,'-|', $npm_bin_node . ' ./cache/alexa-cookie/create-cookie.js' or die $@;
+	my $line;
+	my $Loop = "1";
+	do {
+		$line=<CMD>;
+		$CreatCookie .= $line. "<br>";
+	
+		Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Result $line" if ($line ne "");
+		
+		if (index($line, "Please check credentials") != -1) {$Loop = "2";}
+		if (index($line, "Final Registraton Result") != -1) {$Loop = "3";}
+	
+	} while ($Loop eq "1");
+	
+	if ($Loop eq "2") {
+		$InstallResult .= 'Bitte den Link anklicken und die Amazonanmeldung durchfuehren.<br>';
+		$InstallResult .= '<a  target="_blank" href="http://' . $ProxyIP . ':' . $ProxyPort . '/">http://' . $ProxyIP . ':' . $ProxyPort . '</a><br>';
+		$InstallResult .= '<br><form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form>';
+		$InstallResult .= "</html>";
+		$InstallResult =~ s/'/&#x0027/g;
+		InternalTimer(gettimeofday() + 3 , "echodevice_NPMWaitForCookie" , $hash, 0);
+		
+		# result.json löschen
+		if ((-e $filename)) {unlink $filename};
+		
+		return $InstallResult;
+	}
+
+	if ($Loop eq "3") {
+		$InstallResult .= '<p><strong><font color="green">Refreshtoken wurde erfolgreich erstellt</font></strong></p>';
+		$InstallResult .= "</html>";
+		$InstallResult =~ s/'/&#x0027/g;
+		return $InstallResult;
+	}
+
+	return $InstallResult;
+	
+}
+
+sub echodevice_NPMWaitForCookie($){
+	my ($hash) = @_;
+	my $name = $hash->{NAME};
+	my $filename  = "cache/alexa-cookie/result.json";
+	
+	if (-e $filename) {
+		Log3 $name, 3, "[$name] [echodevice_NPMWaitForCookie] write new refreshtoken" ;
+		readingsSingleUpdate( $hash, "amazon_refreshtoken", "vorhanden",1 );
+		
+		# Informationen eintragen	
+		open(MAILDAT, "<$filename") || die "Datei wurde nicht gefunden\n";
+		while(<MAILDAT>){
+			readingsSingleUpdate( $hash, ".COOKIE", $_,1 );
+			readingsSingleUpdate( $hash, "COOKIE_TYPE", "NPM_Login",1 );
+		}
+		close(MAILDAT);
+	
+		# result.json & Skripte löschen
+		if (-e $filename) {unlink $filename;}
+		if (-e "cache/alexa-cookie/create-cookie.js")  {unlink "cache/alexa-cookie/create-cookie.js";}
+		if (-e "cache/alexa-cookie/refresh-cookie.js") {unlink "cache/alexa-cookie/refresh-cookie.js";}
+	}
+	else {
+		Log3 $name, 4, "[$name] [echodevice_NPMWaitForCookie] wait for refreshtoken" ;
+		InternalTimer(gettimeofday() + 1 , "echodevice_NPMWaitForCookie" , $hash, 0);
+	}
+}
+
+sub echodevice_NPMLoginRefresh($){
+	my ($hash) = @_;
+	my $name = $hash->{NAME};
+
+	my $InstallResult = '<html><p><strong>Login Ergebnis</strong></p><br>';
+	my $npm_bin_node  = AttrVal($name,"npm_bin_node","/usr/bin/node");
+	
+	# Prüfen ob npm installiert ist
+	if (!(-e $npm_bin_node)) {
+		$InstallResult .= '<p>Das Bin <strong>' . $npm_bin_node . '</strong> wurde nicht gefunden. Bitte zuerst das Linux Paket NPM installieren. Folgenden Befehl koennt Ihr hier verwenden:</p>';
+		$InstallResult .= '<p><strong><font color="blue">sudo apt-get install npm</font></strong></p><br>';
+		$InstallResult .= '<p>Sollte das Linux Paket NPM schon installiert sein, muesst Ihr ggf. das Attribut "<strong>npm_bin_node</strong>" entsprechend anpassen. Standard=/usr/bin/node</p>';
+		$InstallResult .= '<br><form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form>';
+		$InstallResult .= "</html>";
+		$InstallResult =~ s/'/&#x0027/g;
+		Log3 $name, 3, "[$name] [echodevice_NPMLoginRefresh] " . $npm_bin_node . " not found" ;
+		return $InstallResult;
+	}
+
+	# Prüfen ob das alexa-cookie Mdoul vorhanden ist
+	if (!(-e "cache/alexa-cookie/node_modules/alexa-cookie2/alexa-cookie.js")) {
+		$InstallResult .= '<p>Das alexa-cookie Modul wurde nicht gefunden. Bitte fuehrt am Amazon Account Device einen set "<strong>NPM_install</strong>" durch </p>';
+		$InstallResult .= '<br><form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form>';
+		$InstallResult .= "</html>";
+		$InstallResult =~ s/'/&#x0027/g;
+		Log3 $name, 3, "[$name] [echodevice_NPMLoginRefresh] alexa-cookie modul not found" ;
+		return $InstallResult;
+	}
+	
+	my $SkriptContent  = "alexaCookie = require('alexa-cookie2');" . "\n";
+	$SkriptContent    .= "fs = require('fs');" . "\n";
+	$SkriptContent    .= "" . "\n";
+	$SkriptContent    .= "const config = {" . "\n";
+	$SkriptContent    .= "    logger: console.log," . "\n";
+	$SkriptContent    .= "    formerRegistrationData: " . ReadingsVal($name , ".COOKIE", "0") . "\n";
+	$SkriptContent    .= "};" . "\n";
+	$SkriptContent    .= "" . "\n";
+	$SkriptContent    .= "alexaCookie.refreshAlexaCookie(config, (err, result) => {" . "\n";
+	$SkriptContent    .= "    console.log('RESULT: ' + err + ' / ' + JSON.stringify(result));" . "\n";
+	$SkriptContent    .= "    fs.writeFileSync('./cache/alexa-cookie/result.json', JSON.stringify(result) , 'utf-8'); " . "\n";
+	$SkriptContent    .= "});" . "\n";
+	$SkriptContent    .= "" . "\n";
+	
+	my $filename  = "cache/alexa-cookie/refresh-cookie.js";
+	#$InstallResult .= '<form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form><br>';
+	
+	# Altes Skript löschen
+	if ((-e $filename)) {unlink $filename};
+	
+	# Neues Skript anlegen
+	open(FH, ">$filename");
+	print FH $SkriptContent;
+	close(FH);
+	
+	# Skript ausführen
+	close CMD;
+	#Log3 $name, 3, "[$name] [echodevice_NPMLoginRefresh] start" ;
+	open CMD,'-|',$npm_bin_node . ' ./cache/alexa-cookie/refresh-cookie.js &' or die $@;
+	
+	#system("node ./cache/alexa-cookie/refresh-cookie.js &");
+	
+	my $line;
+	my $Loop = "1";
+	do {
+		#Log3 $name, 3, "[$name] [echodevice_NPMLoginRefresh] started" ;
+		$Loop = "2";
+	} while ($Loop eq "1");
+	
+	#Log3 $name, 3, "[$name] [echodevice_NPMLoginRefresh] stop" ;
+	
+	if ($Loop eq "2") {
+		InternalTimer(gettimeofday() + 1 , "echodevice_NPMWaitForCookie" , $hash, 0);
+	}
+
+	#close CMD;
+	
+	#$InstallResult .= "</html>";
+	#$InstallResult =~ s/'/&#x0027/g;
+
+	return ;#$InstallResult;
+
 }
 
 ##########################

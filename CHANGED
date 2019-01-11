@@ -1,2 +1,5 @@
+2019.01.11 v0.0.51
+    - FEATURE: Unterstützung AppRegisterLogin per NPM
+    - CHANGE:  https://forum.fhem.de/index.php/topic,82631.msg869460.html#msg869460           
 2019-01-01: initial commit
 
