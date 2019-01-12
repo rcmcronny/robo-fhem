@@ -1,3 +1,8 @@
+2019.01.11 v0.0.51c
+- BUGFIX:  NPM Proxy IP Adresse / Port usw.
+- FEATURE: Unterstützung AppRegisterLogin per NPM
+        Unterstützung A10L5JEZTKKCZ8 VOBOT
+- CHANGE:  https://forum.fhem.de/index.php/topic,82631.msg869460.html#msg869460
 2019.01.11 v0.0.51
     - FEATURE: Unterstützung AppRegisterLogin per NPM
     - CHANGE:  https://forum.fhem.de/index.php/topic,82631.msg869460.html#msg869460           
