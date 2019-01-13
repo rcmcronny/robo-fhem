@@ -1,9 +1,10 @@
-2019.01.12 v0.0.51e
+2019.01.12 v0.0.51f
 - BUGFIX:  NPM Proxy IP Adresse / Port usw.
 - FEATURE: Unterstützung AppRegisterLogin per NPM
            Unterstützung A10L5JEZTKKCZ8 VOBOT
            set speak_ssml https://docs.aws.amazon.com/polly/latest/dg/supported-ssml.html
            https://developer.amazon.com/de/docs/custom-skills/speech-synthesis-markup-language-ssml-reference.html
+           get status - Statusinformationen zum Modul
 - CHANGE:  https://forum.fhem.de/index.php/topic,82631.msg869460.html#msg869460
 2019-01-01: initial commit
 

@@ -1,12 +1,13 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
-# 2019.01.12 v0.0.51e
+# 2019.01.12 v0.0.51f
 # - BUGFIX:  NPM Proxy IP Adresse / Port usw.
 # - FEATURE: Unterstützung AppRegisterLogin per NPM
 #            Unterstützung A10L5JEZTKKCZ8 VOBOT
 #            set speak_ssml https://docs.aws.amazon.com/polly/latest/dg/supported-ssml.html
 #            https://developer.amazon.com/de/docs/custom-skills/speech-synthesis-markup-language-ssml-reference.html
+#            get status - Statusinformationen zum Modul
 # - CHANGE:  https://forum.fhem.de/index.php/topic,82631.msg869460.html#msg869460
 #
 # 2018.12.02 v0.0.50
@@ -313,7 +314,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.51e";
+my $ModulVersion     = "0.0.51f";
 my $AWSPythonVersion = "0.0.3";
 
 ##############################################################################
@@ -469,7 +470,7 @@ sub echodevice_Get($@) {
 		$usage .= "help:noArg  " ;
 	}
 	elsif ($hash->{model} eq "ACCOUNT") {
-		$usage .= "settings:noArg devices:noArg actions:noArg tracks:noArg help:noArg conversations:noArg html_results:noArg address";
+		$usage .= "settings:noArg devices:noArg actions:noArg tracks:noArg help:noArg conversations:noArg html_results:noArg address status:noArg";
 	}
 	else {
 		$usage .= "tunein settings:noArg primeplayeigene_albums primeplayeigene_tracks primeplayeigene_artists primeplayeigeneplaylist:noArg help:noArg html_results:noArg ";
@@ -614,7 +615,52 @@ sub echodevice_Get($@) {
 
 	elsif($command eq "address") {
 		echodevice_SendCommand($hash,"address",$parameter);
-	}	
+	}
+
+	elsif($command eq "status") {
+		
+		my $return = '<html>';
+		
+		#Allgemeine Informationen
+		$return .= '<table align="" border="0" cellspacing="0" cellpadding="3" width="100%" height="100%" class="mceEditable"><tbody>';
+		$return .= "<p><strong>Modul Infos:</strong></p>";
+		$return .= "<tr><td><strong>Beschreigung&nbsp;&nbsp;&nbsp</strong></td><td><strong>Bereich&nbsp;&nbsp;&nbsp</strong></td><td><strong>Wert</strong></td></tr>";
+		$return .= "<tr><td>Version&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "version", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>COOKIE_STATE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_STATE", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>COOKIE_TYPE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_TYPE", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>amazon_refreshtoken&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "amazon_refreshtoken", "unbekannt") . "</td></tr>";
+		#$return .= "<tr><td>.COOKIE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>123</td></tr>";
+		
+		# Attribute auslesen
+		while ( my ($key, $value) = each %{$attr{$name}} ) {
+			$return .= "<tr><td>" . $key . "&nbsp;&nbsp;&nbsp;</td><td>Attribut</td><td>" . $value . "</td></tr>";
+		}
+		
+		$return .= "<tr><td>&nbsp</td><td>&nbsp</td><td> </td></tr></tbody></table>";
+		
+		#Allgemeine Cookie Infos
+		$return .= '<table align="" border="0" cellspacing="0" cellpadding="3" width="100%" height="100%" class="mceEditable"><tbody>';
+		$return .= "<p><strong>Amazon Cookie:</strong></p>";
+		$return .= "<tr><td><strong>Beschreigung&nbsp;&nbsp;&nbsp</strong></td><td><strong>Bereich&nbsp;&nbsp;&nbsp</strong></td><td><strong>Wert</strong></td></tr>";
+		$return .= "<tr><td>.COOKIE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . substr(ReadingsVal( $name, ".COOKIE", "unbekannt" ), 0, 20) . "....</td></tr>";
+		$return .= "<tr><td>COOKIE_STATE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_STATE", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>COOKIE_TYPE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_TYPE", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>amazon_refreshtoken&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "amazon_refreshtoken", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>.COOKIE&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"   . substr($hash->{helper}{".COOKIE"}, 0, 20) . "....</td></tr>";
+		$return .= "<tr><td>.COMMSID&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . substr($hash->{helper}{".COMMSID"}, 0, 20) . "....</td></tr>";
+		$return .= "<tr><td>.CSRF&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"     . substr($hash->{helper}{".CSRF"}, 0, 3) . "....</td></tr>";
+		$return .= "<tr><td>.DIRECTID&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>" . substr($hash->{helper}{".DIRECTID"}, 0, 20) . "....</td></tr>";
+		$return .= "<tr><td>RUNLOGIN&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . $hash->{helper}{"RUNLOGIN"} . "</td></tr>";
+		$return .= "<tr><td>RUNNING_REQUEST&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . $hash->{helper}{"RUNNING_REQUEST"} . "</td></tr>";
+		$return .= "<tr><td>RUNLOGIN&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . $hash->{helper}{"RUNLOGIN"} . "</td></tr>";
+		$return .= "<tr><td>RUNLOGIN&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . $hash->{helper}{"RUNLOGIN"} . "</td></tr>";
+		$return .= "<tr><td>&nbsp</td><td>&nbsp</td><td> </td></tr></tbody></table>";
+		
+		$return .= "</html>";
+
+		return $return;	
+		
+	}
 	
   return undef;
 }
@@ -4178,7 +4224,8 @@ sub echodevice_NPMInstall(){
 
 sub echodevice_NPMLoginNew($){
 	my ($hash) = @_;
-	my $name = $hash->{NAME};
+	my $name   = $hash->{NAME};
+	my $number = $hash->{NR};
 	my $InstallResult = '<html><p><strong>Login Ergebnis</strong></p><br>';
 	my $npm_bin_node  = AttrVal($name,"npm_bin_node","/usr/bin/node");
 	
@@ -4262,27 +4309,12 @@ sub echodevice_NPMLoginNew($){
 	else {
 		Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Proxy Port $ProxyPort is free";
 	}
-	
-	
-	# Browser User Agent
-	my $HeaderLanguage = AttrVal($name,"browser_language","de,en-US;q=0.7,en;q=0.3");
-	my $UserAgent = AttrVal($name,"browser_useragent","Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0"); 
-	
-	if (AttrVal($name,"browser_useragent_random",0) == 1) {
-		$UserAgent = join('', map{('a'..'z','A'..'Z',0..9)[rand 62]} 0..20);
-	}
-
-	readingsSingleUpdate ($hash, "BrowserUserAgent", $UserAgent ,0);
-	readingsSingleUpdate ($hash, "BrowserLanguage", $HeaderLanguage ,0);
-	
-	
+		
 	my $SkriptContent  = "alexaCookie = require('alexa-cookie2');" . "\n";
 	$SkriptContent    .= "fs = require('fs');" . "\n";
 	$SkriptContent    .= "" . "\n";
 	$SkriptContent    .= "const config = {" . "\n";
 	$SkriptContent    .= "    logger: console.log," . "\n";
-	#$SkriptContent    .= "    userAgent: '" . $UserAgent . "'" . "\n";
-	#$SkriptContent    .= "    acceptLanguage: '" . $HeaderLanguage . "'," . "\n";
 	$SkriptContent    .= "    setupProxy: true," . "\n";
 	$SkriptContent    .= "    proxyOwnIp: '$ProxyIP'," . "\n";
 	$SkriptContent    .= "    proxyPort: $ProxyPort," . "\n";
@@ -4292,14 +4324,14 @@ sub echodevice_NPMLoginNew($){
 	$SkriptContent    .= "" . "\n";
 	$SkriptContent    .= "alexaCookie.generateAlexaCookie('" . uri_escape(echodevice_decrypt($hash->{helper}{".USER"})) . "', '" . uri_escape(echodevice_decrypt($hash->{helper}{".PASSWORD"})) . "', config, (err, result) => {" . "\n";
 	$SkriptContent    .= "    console.log('RESULT: ' + err + ' / ' + JSON.stringify(result));" . "\n";
-	$SkriptContent    .= "    fs.writeFileSync('./cache/alexa-cookie/result.json', JSON.stringify(result) , 'utf-8'); " . "\n";
+	$SkriptContent    .= "    fs.writeFileSync('./cache/alexa-cookie/" . $number . "result.json', JSON.stringify(result) , 'utf-8'); " . "\n";
 	$SkriptContent    .= "    if (result && result.csrf) {" . "\n";
 	$SkriptContent    .= "        alexaCookie.stopProxyServer();" . "\n";
 	$SkriptContent    .= "    }" . "\n";
 	$SkriptContent    .= "});" . "\n";
 	$SkriptContent    .= "" . "\n";
-	
-	my $filename  = "cache/alexa-cookie/create-cookie.js";
+
+	my $filename  = "cache/alexa-cookie/" . $number . "create-cookie.js";
 
 	# Altes Skript löschen
 	if ((-e $filename)) {unlink $filename};
@@ -4326,7 +4358,7 @@ sub echodevice_NPMLoginNew($){
 		
 	# Skript ausführen
 	close CMD;
-	open CMD,'-|', $npm_bin_node . ' ./cache/alexa-cookie/create-cookie.js' or die $@;
+	open CMD,'-|', $npm_bin_node . ' ./' . $filename or die $@;
 	my $line;
 	my $Loop = "1";
 	my $LoopCount = 0;
@@ -4375,6 +4407,7 @@ sub echodevice_NPMLoginNew($){
 sub echodevice_NPMLoginRefresh($){
 	my ($hash) = @_;
 	my $name = $hash->{NAME};
+	my $number = $hash->{NR};
 
 	my $InstallResult = '<html><p><strong>Login Ergebnis</strong></p><br>';
 	my $npm_bin_node  = AttrVal($name,"npm_bin_node","/usr/bin/node");
@@ -4411,11 +4444,11 @@ sub echodevice_NPMLoginRefresh($){
 	$SkriptContent    .= "" . "\n";
 	$SkriptContent    .= "alexaCookie.refreshAlexaCookie(config, (err, result) => {" . "\n";
 	$SkriptContent    .= "    console.log('RESULT: ' + err + ' / ' + JSON.stringify(result));" . "\n";
-	$SkriptContent    .= "    fs.writeFileSync('./cache/alexa-cookie/result.json', JSON.stringify(result) , 'utf-8'); " . "\n";
+	$SkriptContent    .= "    fs.writeFileSync('./cache/alexa-cookie/" . $number . "result.json', JSON.stringify(result) , 'utf-8'); " . "\n";
 	$SkriptContent    .= "});" . "\n";
 	$SkriptContent    .= "" . "\n";
 	
-	my $filename  = "cache/alexa-cookie/refresh-cookie.js";
+	my $filename  = "cache/alexa-cookie/" . $number . "refresh-cookie.js";
 	#$InstallResult .= '<form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form><br>';
 	
 	# Altes Skript löschen
@@ -4440,7 +4473,7 @@ sub echodevice_NPMLoginRefresh($){
 	# Skript ausführen
 	close CMD;
 	#Log3 $name, 3, "[$name] [echodevice_NPMLoginRefresh] start" ;
-	open CMD,'-|',$npm_bin_node . ' ./cache/alexa-cookie/refresh-cookie.js &' or die $@;
+	open CMD,'-|',$npm_bin_node . ' ./' . $filename . ' &' or die $@;
 	
 	#system("node ./cache/alexa-cookie/refresh-cookie.js &");
 	
@@ -4468,8 +4501,9 @@ sub echodevice_NPMLoginRefresh($){
 
 sub echodevice_NPMWaitForCookie($){
 	my ($hash) = @_;
-	my $name = $hash->{NAME};
-	my $filename  = "cache/alexa-cookie/result.json";
+	my $name   = $hash->{NAME};
+	my $number = $hash->{NR};
+	my $filename  = "cache/alexa-cookie/" . $number . "result.json";
 	my $CanDelete = 0;
 	
 	if (-e $filename) {
@@ -4490,8 +4524,8 @@ sub echodevice_NPMWaitForCookie($){
 
 				# result.json & Skripte löschen
 				if (-e $filename) {unlink $filename;}
-				if (-e "cache/alexa-cookie/create-cookie.js")  {unlink "cache/alexa-cookie/create-cookie.js";}
-				if (-e "cache/alexa-cookie/refresh-cookie.js") {unlink "cache/alexa-cookie/refresh-cookie.js";}
+				if (-e "cache/alexa-cookie/" . $number . "create-cookie.js")  {unlink "cache/alexa-cookie/" . $number . "create-cookie.js";}
+				if (-e "cache/alexa-cookie/" . $number . "refresh-cookie.js") {unlink "cache/alexa-cookie/" . $number . "refresh-cookie.js";}
 			}
 			else {
 				readingsSingleUpdate( $hash, "amazon_refreshtoken", "wait for refreshtoken",1 );
