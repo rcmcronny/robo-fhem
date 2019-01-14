@@ -1,7 +1,7 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
-# 2019.01.12 v0.0.51f
+# 2019.01.13 v0.0.51h
 # - BUGFIX:  NPM Proxy IP Adresse / Port usw.
 # - FEATURE: Unterstützung AppRegisterLogin per NPM
 #            Unterstützung A10L5JEZTKKCZ8 VOBOT
@@ -314,7 +314,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.51f";
+my $ModulVersion     = "0.0.51h";
 my $AWSPythonVersion = "0.0.3";
 
 ##############################################################################
@@ -479,7 +479,7 @@ sub echodevice_Get($@) {
 	#return "no get" if ($hash->{model} eq "Echo Multiroom");
 	return $usage if $command eq '?';
 	
-	if ($command ne "help" || $command ne "help_results") {
+	if ($command ne "help" || $command ne "help_results" || $command ne "status") {
 	}
 	elsif (IsDisabled($name)) {
 		$hash->{STATE} = "disabled";
@@ -1927,11 +1927,11 @@ sub echodevice_SendCommand($$$) {
 		my $sequenceJson;
 	
 		if(AttrVal($name,"speak_volume",0) > 0){
-			$SendData = '{"behaviorId":"PREVIEW","sequenceJson":"{\"@type\":\"com.amazon.alexa.behaviors.model.Sequence\",\"startNode\":{\"@type\":\"com.amazon.alexa.behaviors.model.SerialNode\",\"nodesToExecute\":[{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.DeviceControls.Volume\",\"operationPayload\":{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"locale\":\"de-DE\",\"value\":\"'.AttrVal($name , "speak_volume", 50).'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\"}},{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"AlexaAnnouncement\",\"operationPayload\":{\"expireAfter\":\"PT5S\",\"content\":[{\"locale\":\"\",\"display\":{\"title\":\"OpenHAB\",\"body\":\"test\"},\"speak\":{\"type\":\"ssml\",\"value\":\"' . $SendData . '\"}}],\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"target\":{\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"devices\":[{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"deviceTypeId\":\"' . $hash->{helper}{DEVICETYPE} . '\"}]}}},{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.DeviceControls.Volume\",\"operationPayload\":{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"locale\":\"de-DE\",\"value\":\"'.ReadingsVal($name , "volume", 50).'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\"}}]}}","status":"ENABLED"}'
+			$SendData = '{"behaviorId":"PREVIEW","sequenceJson":"{\"@type\":\"com.amazon.alexa.behaviors.model.Sequence\",\"startNode\":{\"@type\":\"com.amazon.alexa.behaviors.model.SerialNode\",\"nodesToExecute\":[{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.DeviceControls.Volume\",\"operationPayload\":{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"locale\":\"de-DE\",\"value\":\"'.AttrVal($name , "speak_volume", 50).'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\"}},{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"AlexaAnnouncement\",\"operationPayload\":{\"expireAfter\":\"PT5S\",\"content\":[{\"locale\":\"\",\"display\":{\"title\":\"FHEM\",\"body\":\"Speak\"},\"speak\":{\"type\":\"ssml\",\"value\":\"' . $SendData . '\"}}],\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"target\":{\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"devices\":[{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"deviceTypeId\":\"' . $hash->{helper}{DEVICETYPE} . '\"}]}}},{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.DeviceControls.Volume\",\"operationPayload\":{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"locale\":\"de-DE\",\"value\":\"'.ReadingsVal($name , "volume", 50).'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\"}}]}}","status":"ENABLED"}'
 			
 		}
 		else {
-			$SendData = '{"behaviorId": "PREVIEW","sequenceJson": "{\"@type\":\"com.amazon.alexa.behaviors.model.Sequence\",\"startNode\":{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"AlexaAnnouncement\",\"operationPayload\":{\"expireAfter\":\"PT5S\",\"content\":[{\"locale\":\"\",\"display\":{\"title\":\"OpenHAB\",\"body\":\"test\"},\"speak\":{\"type\":\"ssml\",\"value\":\"' . $SendData . '\"}}],\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"target\":{\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"devices\":[{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"deviceTypeId\":\"' . $hash->{helper}{DEVICETYPE} . '\"}]}}}}","status": "ENABLED"}';
+			$SendData = '{"behaviorId": "PREVIEW","sequenceJson": "{\"@type\":\"com.amazon.alexa.behaviors.model.Sequence\",\"startNode\":{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"AlexaAnnouncement\",\"operationPayload\":{\"expireAfter\":\"PT5S\",\"content\":[{\"locale\":\"\",\"display\":{\"title\":\"FHEM\",\"body\":\"Speak\"},\"speak\":{\"type\":\"ssml\",\"value\":\"' . $SendData . '\"}}],\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"target\":{\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"devices\":[{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"deviceTypeId\":\"' . $hash->{helper}{DEVICETYPE} . '\"}]}}}}","status": "ENABLED"}';
 		}
 	
 		$SendDataL  = $SendData;
@@ -3307,7 +3307,7 @@ sub echodevice_Parse($$$) {
 				#next if($device->{deviceFamily} eq "FIRE_TV");
 				#next if($device->{deviceFamily} =~ /AMAZON/);
 				$isautocreated = 0;
-				if($autocreate && ($device->{deviceFamily} eq "FIRE_TV" || $device->{deviceFamily} eq "TABLET" || $device->{deviceFamily} eq "ECHO" || $device->{deviceFamily} eq "KNIGHT" || $device->{deviceFamily} eq "THIRD_PARTY_AVS_MEDIA_DISPLAY"  || $device->{deviceFamily} eq "WHA" || $device->{deviceFamily} eq "ROOK" )) {
+				if($autocreate && ($device->{deviceFamily} eq "UNKNOWN" || $device->{deviceFamily} eq "FIRE_TV" || $device->{deviceFamily} eq "TABLET" || $device->{deviceFamily} eq "ECHO" || $device->{deviceFamily} eq "KNIGHT" || $device->{deviceFamily} eq "THIRD_PARTY_AVS_MEDIA_DISPLAY"  || $device->{deviceFamily} eq "WHA" || $device->{deviceFamily} eq "ROOK" )) {
 					if( defined($modules{$hash->{TYPE}}{defptr}{"$device->{serialNumber}"}) ) {
 						Log3 $name, 4, "[$name] [echodevice_Parse] device '$device->{serialNumber}' already defined";
 						if (AttrVal($name, "autocreate_refresh", 0) == 1) {
