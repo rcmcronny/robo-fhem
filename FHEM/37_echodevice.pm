@@ -1,7 +1,7 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
-# 2019.01.13 v0.0.51j
+# 2019.01.15 v0.0.51k
 # - BUGFIX:  NPM Proxy IP Adresse / Port usw.
 #            set routine_play - Unterstützung Smart Home Geräte
 #            set speak - Sonderzeichen " entfernen
@@ -315,9 +315,8 @@ use Date::Parse;
 use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
-use XML::Simple;
 
-my $ModulVersion     = "0.0.51j";
+my $ModulVersion     = "0.0.51k";
 my $AWSPythonVersion = "0.0.3";
 
 ##############################################################################
@@ -4277,7 +4276,9 @@ sub echodevice_NPMLoginNew($){
 	else {
 		Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Proxy Port $ProxyPort is free";
 	}
-		
+
+	Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Proxy IP $ProxyIP";
+
 	my $SkriptContent  = "alexaCookie = require('alexa-cookie2');" . "\n";
 	$SkriptContent    .= "fs = require('fs');" . "\n";
 	$SkriptContent    .= "" . "\n";
