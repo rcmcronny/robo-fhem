@@ -1,12 +1,12 @@
-2019.01.15 v0.0.51k
+2019.01.15 v0.0.51m
 - BUGFIX:  NPM Proxy IP Adresse / Port usw.
            set routine_play - Unterstützung Smart Home Geräte
            set speak - Sonderzeichen " entfernen
 - FEATURE: Unterstützung AppRegisterLogin per NPM
            Unterstützung A10L5JEZTKKCZ8 VOBOT
-           set speak_ssml https://docs.aws.amazon.com/polly/latest/dg/supported-ssml.html                                                             
-           https://developer.amazon.com/de/docs/custom-skills/speech-synthesis-markup-language-ssml-reference.html                                    
+           set speak_ssml https://docs.aws.amazon.com/polly/latest/dg/supported-ssml.html
+           https://developer.amazon.com/de/docs/custom-skills/speech-synthesis-markup-language-ssml-reference.html
            get status - Statusinformationen zum Modul
-- CHANGE:  https://forum.fhem.de/index.php/topic,82631.msg869460.html#msg869460                                                                       
+- CHANGE:  https://forum.fhem.de/index.php/topic,82631.msg869460.html#msg869460
 2019-01-01: initial commit 0.0.50
 

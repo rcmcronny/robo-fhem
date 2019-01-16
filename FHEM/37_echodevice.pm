@@ -1,7 +1,7 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
-# 2019.01.15 v0.0.51k
+# 2019.01.15 v0.0.51m
 # - BUGFIX:  NPM Proxy IP Adresse / Port usw.
 #            set routine_play - Unterstützung Smart Home Geräte
 #            set speak - Sonderzeichen " entfernen
@@ -316,7 +316,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.51k";
+my $ModulVersion     = "0.0.51m";
 my $AWSPythonVersion = "0.0.3";
 
 ##############################################################################
@@ -4196,7 +4196,7 @@ sub echodevice_NPMLoginNew($){
 	my $InstallResult = '<html><p><strong>Login Ergebnis</strong></p><br>';
 	my $npm_bin_node  = AttrVal($name,"npm_bin_node","/usr/bin/node");
 	
-	# Prüfen ob npm installiert ist
+	# Prüfen ob node installiert ist
 	if (!(-e $npm_bin_node)) {
 		$InstallResult .= '<p>Das Bin <strong>' . $npm_bin_node . '</strong> wurde nicht gefunden. Bitte zuerst das Linux Paket NPM installieren. Folgenden Befehl koennt Ihr hier verwenden:</p>';
 		$InstallResult .= '<p><strong><font color="blue">sudo apt-get install npm</font></strong></p><br>';
@@ -4208,6 +4208,36 @@ sub echodevice_NPMLoginNew($){
 		return $InstallResult;
 	}
 
+	# Node Version prüfen
+	close NODEVER;
+	open NODEVER,'-|', 'node -v' or die $@;
+	my $NodeResult;
+	my $NodeLoop = "2";
+	do {
+		$NodeResult=<NODEVER>;
+		$NodeResult =~ s/v//g; 
+	
+		#Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Node Version $NodeResult";
+		if (version->declare($NodeResult)->numify < version->declare('8.10')->numify ) {
+
+			$InstallResult .= '<p>Die installierte Node Version  <strong>' . $NodeResult . '</strong> ist zu alt. Bitte zuerst die Node Version auf Minimum <strong>8.12</strong> aktualisieren. Folgenden Befehle koennt Ihr hier verwenden:</p>';
+			$InstallResult .= '<p><strong><font color="blue">sudo apt-get install curl</font></strong></p>';
+			$InstallResult .= '<p><strong><font color="blue">curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -</font></strong></p>';
+			$InstallResult .= '<p><strong><font color="blue">sudo apt-get update</font></strong></p>';
+			$InstallResult .= '<p><strong><font color="blue">sudo apt-get install nodejs</font></strong></p><br>';
+			$InstallResult .= '<br><form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form>';
+			$InstallResult .= "</html>";
+			$InstallResult =~ s/'/&#x0027/g;
+			Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Node Version " . $NodeResult . " is to old! Pleas make an update";
+			return $InstallResult;
+
+		}
+		else {Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Node Version " . $NodeResult;}
+		
+		
+		
+	} while ($NodeLoop eq "1");
+	
 	# Prüfen ob das alexa-cookie Mdoul vorhanden ist
 	if (!(-e "cache/alexa-cookie/node_modules/alexa-cookie2/alexa-cookie.js")) {
 		$InstallResult .= '<p>Das alexa-cookie Modul wurde nicht gefunden. Bitte fuehrt am Amazon Account Device einen set "<strong>NPM_install</strong>" durch </p>';
@@ -4243,7 +4273,7 @@ sub echodevice_NPMLoginNew($){
 		Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] wrong IP-Address" ;
 		return $InstallResult;
 	}
-
+	
 	# Prüfen ob der Port belegt ist
 	close PORT;
 	open PORT,'-|', 'netstat -a' or die $@;
@@ -4340,7 +4370,7 @@ sub echodevice_NPMLoginNew($){
 		
 		$Loop = "2" if (index($line, "Please check credentials") != -1) ;
 		$Loop = "3" if (index($line, "Final Registraton Result") != -1) ;
-		$Loop = "4" if ($line ne "" && $LoopCount > 10);
+		$Loop = "4" if ($line eq "" && $LoopCount > 100);
 	
 	} while ($Loop eq "1");
 	
