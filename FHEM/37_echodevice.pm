@@ -1,7 +1,7 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
-# 2019.01.15 v0.0.51m
+# 2019.01.21 v0.0.51n
 # - BUGFIX:  NPM Proxy IP Adresse / Port usw.
 #            set routine_play - Unterstützung Smart Home Geräte
 #            set speak - Sonderzeichen " entfernen
@@ -316,7 +316,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.51m";
+my $ModulVersion     = "0.0.51n";
 my $AWSPythonVersion = "0.0.3";
 
 ##############################################################################
@@ -419,8 +419,7 @@ sub echodevice_Define($$$) {
 
 		my $account = $modules{$hash->{TYPE}}{defptr}{"account"};
 		
-		
-		 Log3( "", 3, "[$name] DEV account!!=" . $account);
+		Log3 $name, 0, "[echodevice] load ECHO Device $name";
 		
 		$hash->{IODev} = $account;
 		$attr{$name}{IODev} = $account->{NAME} if( !defined($attr{$name}{IODev}) && $account);
@@ -4018,7 +4017,7 @@ sub echodevice_anonymize($$) {
 	$string =~ s/$s2/CUSTOMER/g;
 	$string =~ s/$s3/HOMEGROUP/g;
 	$string =~ s/$s4/COMMSID/g;
-	$string =~ s/$s5/USER/g;
+	$string =~ s%$s5%USER%g;
 	return $string;
 }
 

@@ -1,4 +1,4 @@
-2019.01.15 v0.0.51m
+2019.01.21 v0.0.51n
 - BUGFIX:  NPM Proxy IP Adresse / Port usw.
            set routine_play - Unterstützung Smart Home Geräte
            set speak - Sonderzeichen " entfernen
