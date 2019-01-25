@@ -1,7 +1,7 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
-# 2019.01.21 v0.0.51n
+# 2019.01.25 v0.0.51p
 # - BUGFIX:  NPM Proxy IP Adresse / Port usw.
 #            set routine_play - Unterstützung Smart Home Geräte
 #            set speak - Sonderzeichen " entfernen
@@ -316,7 +316,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.51n";
+my $ModulVersion     = "0.0.51p";
 my $AWSPythonVersion = "0.0.3";
 
 ##############################################################################
@@ -568,6 +568,50 @@ sub echodevice_Get($@) {
 
 		return $return;		
 	}
+
+	if ($command eq "status") {
+		
+		my $return = '<html>';
+		
+		#Allgemeine Informationen
+		$return .= '<table align="" border="0" cellspacing="0" cellpadding="3" width="100%" height="100%" class="mceEditable"><tbody>';
+		$return .= "<p><strong>Modul Infos:</strong></p>";
+		$return .= "<tr><td><strong>Beschreigung&nbsp;&nbsp;&nbsp</strong></td><td><strong>Bereich&nbsp;&nbsp;&nbsp</strong></td><td><strong>Wert</strong></td></tr>";
+		$return .= "<tr><td>Version&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "version", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>COOKIE_STATE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_STATE", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>COOKIE_TYPE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_TYPE", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>amazon_refreshtoken&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "amazon_refreshtoken", "unbekannt") . "</td></tr>";
+		#$return .= "<tr><td>.COOKIE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>123</td></tr>";
+		
+		# Attribute auslesen
+		while ( my ($key, $value) = each %{$attr{$name}} ) {
+			$return .= "<tr><td>" . $key . "&nbsp;&nbsp;&nbsp;</td><td>Attribut</td><td>" . $value . "</td></tr>";
+		}
+		
+		$return .= "<tr><td>&nbsp</td><td>&nbsp</td><td> </td></tr></tbody></table>";
+		
+		#Allgemeine Cookie Infos
+		$return .= '<table align="" border="0" cellspacing="0" cellpadding="3" width="100%" height="100%" class="mceEditable"><tbody>';
+		$return .= "<p><strong>Amazon Cookie:</strong></p>";
+		$return .= "<tr><td><strong>Beschreigung&nbsp;&nbsp;&nbsp</strong></td><td><strong>Bereich&nbsp;&nbsp;&nbsp</strong></td><td><strong>Wert</strong></td></tr>";
+		$return .= "<tr><td>.COOKIE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . substr(ReadingsVal( $name, ".COOKIE", "unbekannt" ), 0, 20) . "....</td></tr>";
+		$return .= "<tr><td>COOKIE_STATE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_STATE", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>COOKIE_TYPE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_TYPE", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>amazon_refreshtoken&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "amazon_refreshtoken", "unbekannt") . "</td></tr>";
+		$return .= "<tr><td>.COOKIE&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"   . substr($hash->{helper}{".COOKIE"}, 0, 20) . "....</td></tr>";
+		$return .= "<tr><td>.COMMSID&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . substr($hash->{helper}{".COMMSID"}, 0, 20) . "....</td></tr>";
+		$return .= "<tr><td>.CSRF&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"     . substr($hash->{helper}{".CSRF"}, 0, 3) . "....</td></tr>";
+		$return .= "<tr><td>.DIRECTID&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>" . substr($hash->{helper}{".DIRECTID"}, 0, 20) . "....</td></tr>";
+		$return .= "<tr><td>RUNLOGIN&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . $hash->{helper}{RUNLOGIN} . "</td></tr>";
+		$return .= "<tr><td>RUNNING_REQUEST&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . $hash->{helper}{RUNNING_REQUEST} . "</td></tr>";
+		$return .= "<tr><td>LOGINERROR&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . $hash->{helper}{".LOGINERROR"} . "</td></tr>";
+		$return .= "<tr><td>&nbsp</td><td>&nbsp</td><td> </td></tr></tbody></table>";
+		
+		$return .= "</html>";
+
+		return $return;	
+		
+	}
 	
 	if ($ConnectState ne "connected") {
 		return "$name is not connected. Aborting...";
@@ -616,51 +660,6 @@ sub echodevice_Get($@) {
 
 	elsif($command eq "address") {
 		echodevice_SendCommand($hash,"address",$parameter);
-	}
-
-	elsif($command eq "status") {
-		
-		my $return = '<html>';
-		
-		#Allgemeine Informationen
-		$return .= '<table align="" border="0" cellspacing="0" cellpadding="3" width="100%" height="100%" class="mceEditable"><tbody>';
-		$return .= "<p><strong>Modul Infos:</strong></p>";
-		$return .= "<tr><td><strong>Beschreigung&nbsp;&nbsp;&nbsp</strong></td><td><strong>Bereich&nbsp;&nbsp;&nbsp</strong></td><td><strong>Wert</strong></td></tr>";
-		$return .= "<tr><td>Version&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "version", "unbekannt") . "</td></tr>";
-		$return .= "<tr><td>COOKIE_STATE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_STATE", "unbekannt") . "</td></tr>";
-		$return .= "<tr><td>COOKIE_TYPE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_TYPE", "unbekannt") . "</td></tr>";
-		$return .= "<tr><td>amazon_refreshtoken&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "amazon_refreshtoken", "unbekannt") . "</td></tr>";
-		#$return .= "<tr><td>.COOKIE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>123</td></tr>";
-		
-		# Attribute auslesen
-		while ( my ($key, $value) = each %{$attr{$name}} ) {
-			$return .= "<tr><td>" . $key . "&nbsp;&nbsp;&nbsp;</td><td>Attribut</td><td>" . $value . "</td></tr>";
-		}
-		
-		$return .= "<tr><td>&nbsp</td><td>&nbsp</td><td> </td></tr></tbody></table>";
-		
-		#Allgemeine Cookie Infos
-		$return .= '<table align="" border="0" cellspacing="0" cellpadding="3" width="100%" height="100%" class="mceEditable"><tbody>';
-		$return .= "<p><strong>Amazon Cookie:</strong></p>";
-		$return .= "<tr><td><strong>Beschreigung&nbsp;&nbsp;&nbsp</strong></td><td><strong>Bereich&nbsp;&nbsp;&nbsp</strong></td><td><strong>Wert</strong></td></tr>";
-		$return .= "<tr><td>.COOKIE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . substr(ReadingsVal( $name, ".COOKIE", "unbekannt" ), 0, 20) . "....</td></tr>";
-		$return .= "<tr><td>COOKIE_STATE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_STATE", "unbekannt") . "</td></tr>";
-		$return .= "<tr><td>COOKIE_TYPE&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "COOKIE_TYPE", "unbekannt") . "</td></tr>";
-		$return .= "<tr><td>amazon_refreshtoken&nbsp;&nbsp;&nbsp;</td><td>Reading</td><td>" . ReadingsVal( $name, "amazon_refreshtoken", "unbekannt") . "</td></tr>";
-		$return .= "<tr><td>.COOKIE&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"   . substr($hash->{helper}{".COOKIE"}, 0, 20) . "....</td></tr>";
-		$return .= "<tr><td>.COMMSID&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . substr($hash->{helper}{".COMMSID"}, 0, 20) . "....</td></tr>";
-		$return .= "<tr><td>.CSRF&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"     . substr($hash->{helper}{".CSRF"}, 0, 3) . "....</td></tr>";
-		$return .= "<tr><td>.DIRECTID&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>" . substr($hash->{helper}{".DIRECTID"}, 0, 20) . "....</td></tr>";
-		$return .= "<tr><td>RUNLOGIN&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . $hash->{helper}{"RUNLOGIN"} . "</td></tr>";
-		$return .= "<tr><td>RUNNING_REQUEST&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . $hash->{helper}{"RUNNING_REQUEST"} . "</td></tr>";
-		$return .= "<tr><td>RUNLOGIN&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . $hash->{helper}{"RUNLOGIN"} . "</td></tr>";
-		$return .= "<tr><td>RUNLOGIN&nbsp;&nbsp;&nbsp;</td><td>Helper</td><td>"  . $hash->{helper}{"RUNLOGIN"} . "</td></tr>";
-		$return .= "<tr><td>&nbsp</td><td>&nbsp</td><td> </td></tr></tbody></table>";
-		
-		$return .= "</html>";
-
-		return $return;	
-		
 	}
 	
   return undef;
@@ -3612,7 +3611,7 @@ sub echodevice_GetSettings($) {
 
 	if($hash->{model} eq "ACCOUNT") {$ConnectState = $hash->{STATE}} else {$ConnectState = $hash->{IODev}->{STATE}}
 	
-	Log3 $name, 5, "[$name] [echodevice_GetSettings] ping!"  ;
+	Log3 $name, 5, "[$name] [echodevice_GetSettings] start refresh settings"  ;
 	
 	if ($ConnectState eq "connected") {
 
@@ -3674,7 +3673,7 @@ sub echodevice_GetSettings($) {
 					if ($CalcInterval < 0) {}
 					elsif ($CalcInterval < ($nextupdate -1) ){$nextupdate = $CalcInterval + 4;}
 						
-					Log3( $name, 4, "[$name] [echodevice_GetSettings] Timer CNTERVAL = " . $CalcInterval);			
+					Log3( $name, 4, "[$name] [echodevice_GetSettings] Timer CINTERVAL = " . $CalcInterval);			
 				}
 				if ($hash->{IODev}{STATE} eq "connected") {
 					echodevice_SendCommand($hash,"player","");
@@ -3698,7 +3697,7 @@ sub echodevice_GetSettings($) {
 		Log3( $name, 4, "[$name] [echodevice_GetSettings] Timer INTERVAL = " . $nextupdate);	
 	}
 	else {
-		Log3 $name, 5, "[$name] [echodevice_GetSettings] unknown stat / ConnectState=$ConnectState" ;
+		Log3 $name, 5, "[$name] [echodevice_GetSettings] unknown state / state = $ConnectState" ;
 	}
 	
 	RemoveInternalTimer($hash, "echodevice_GetSettings");
@@ -3800,9 +3799,15 @@ sub echodevice_LoginStart($) {
 				echodevice_setState($hash,"connected");
 			} 
 			else {
-				Log3 $name, 4, "[$name] [echodevice_LoginStart] start login";
-				$hash->{helper}{RUNLOGIN} = 0;
-				echodevice_SendLoginCommand($hash,"cookielogin1","") if(!defined($attr{$name}{cookie}));
+				if (index(ReadingsVal($name , ".COOKIE", "0"), "{") != -1) { 
+					# try reconnect
+					echodevice_SendLoginCommand($hash,"cookielogin6","");
+				}
+				else {
+					Log3 $name, 4, "[$name] [echodevice_LoginStart] start login";
+					$hash->{helper}{RUNLOGIN} = 0;
+					echodevice_SendLoginCommand($hash,"cookielogin1","") if(!defined($attr{$name}{cookie}));				
+				}
 			}
 		}
 		elsif ($hash->{STATE} eq "connected but loginerror") {
@@ -4219,7 +4224,7 @@ sub echodevice_NPMLoginNew($){
 		#Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Node Version $NodeResult";
 		if (version->declare($NodeResult)->numify < version->declare('8.10')->numify ) {
 
-			$InstallResult .= '<p>Die installierte Node Version  <strong>' . $NodeResult . '</strong> ist zu alt. Bitte zuerst die Node Version auf Minimum <strong>8.12</strong> aktualisieren. Folgenden Befehle koennt Ihr hier verwenden:</p>';
+			$InstallResult .= '<p>Die installierte Node Version  <strong>' . $NodeResult . '</strong> ist zu alt. Bitte zuerst die Node Version auf Minimum <strong>8.12</strong> aktualisieren. Folgende Befehle koennt Ihr hier verwenden:</p>';
 			$InstallResult .= '<p><strong><font color="blue">sudo apt-get install curl</font></strong></p>';
 			$InstallResult .= '<p><strong><font color="blue">curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -</font></strong></p>';
 			$InstallResult .= '<p><strong><font color="blue">sudo apt-get update</font></strong></p>';
@@ -4274,26 +4279,30 @@ sub echodevice_NPMLoginNew($){
 	}
 	
 	# Prüfen ob der Port belegt ist
-	close PORT;
-	open PORT,'-|', 'netstat -a' or die $@;
-	my $PORTResult;
 	my $PORTLoop = "1";
-	do {
-		$PORTResult=<PORT>;
-	
-		Log3 $name, 4, "[$name] [echodevice_NPMLoginNew] Result Proxy Port $PORTResult" if ($PORTResult ne "");
-		
-		if (index($PORTResult, ":" . $ProxyPort . " " ) != -1) {
-			$PORTLoop = "2";
-			Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Result Proxy Port $PORTResult";
-		}
-	
-		$PORTLoop = "3" if ($PORTResult eq "");
-	
-	} while ($PORTLoop eq "1");
-	
+	my $NetstatFound = "1";
 	close PORT;
+	open PORT,'-|', 'netstat -a' or do {$NetstatFound= "0"};
 	
+	if ($NetstatFound eq "1") {
+		my $PORTResult;
+		do {
+			$PORTResult=<PORT>;
+		
+			Log3 $name, 4, "[$name] [echodevice_NPMLoginNew] Result Proxy Port $PORTResult" if ($PORTResult ne "");
+			
+			if (index($PORTResult, ":" . $ProxyPort . " " ) != -1) {
+				$PORTLoop = "2";
+				Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Result Proxy Port $PORTResult";
+			}
+		
+			$PORTLoop = "3" if ($PORTResult eq "");
+		
+		} while ($PORTLoop eq "1");
+		
+		close PORT;
+	}
+
 	if ($PORTLoop eq "2") {
 		$InstallResult .= '<p>Der angegebene Proxy Port <strong>' . $ProxyPort . '</strong> ist in Benutzung, bitte das Attribut "<strong>npm_proxy_port</strong>" entsprechend anpassen.</p>';
 		$InstallResult .= '<br><form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form>';
@@ -4302,12 +4311,22 @@ sub echodevice_NPMLoginNew($){
 		Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Proxy Port $ProxyPort is in use" ;
 		return $InstallResult;		
 	}
+	elsif ($PORTLoop eq "1") {
+		$InstallResult .= '<p>Die Pruefung des angegebenen Proxy Ports <strong>' . $ProxyPort . '</strong> hat nicht funktioniert. Zum Pruefen des Proxy Ports wird die Anwendung "netstat" benoetigt. Folgende Befehle koennt Ihr hier verwenden:</p>';
+		$InstallResult .= '<p><strong><font color="blue">sudo apt-get update</font></strong></p>';
+		$InstallResult .= '<p><strong><font color="blue">sudo apt-get install net-tools</font></strong></p><br>';
+		$InstallResult .= '<br><form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form>';
+		$InstallResult .= "</html>";
+		$InstallResult =~ s/'/&#x0027/g;
+		Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Proxy Port netstat not found" ;
+		return $InstallResult;		
+	}
 	else {
 		Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Proxy Port $ProxyPort is free";
 	}
 
 	Log3 $name, 3, "[$name] [echodevice_NPMLoginNew] Proxy IP $ProxyIP";
-
+	
 	my $SkriptContent  = "alexaCookie = require('alexa-cookie2');" . "\n";
 	$SkriptContent    .= "fs = require('fs');" . "\n";
 	$SkriptContent    .= "" . "\n";
@@ -4524,6 +4543,8 @@ sub echodevice_NPMWaitForCookie($){
 				if (-e $filename) {unlink $filename;}
 				if (-e "cache/alexa-cookie/" . $number . "create-cookie.js")  {unlink "cache/alexa-cookie/" . $number . "create-cookie.js";}
 				if (-e "cache/alexa-cookie/" . $number . "refresh-cookie.js") {unlink "cache/alexa-cookie/" . $number . "refresh-cookie.js";}
+				
+				echodevice_setState($hash,"connected");
 			}
 			else {
 				readingsSingleUpdate( $hash, "amazon_refreshtoken", "wait for refreshtoken",1 );
