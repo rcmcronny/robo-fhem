@@ -1,12 +1,13 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
-# 2019.01.29 v0.0.51q
+# 2019.01.31 v0.0.51s
 # - BUGFIX:  NPM Proxy IP Adresse / Port usw.
 #            set routine_play - Unterstützung Smart Home Geräte
 #            set speak - Sonderzeichen " entfernen
 # - FEATURE: Unterstützung AppRegisterLogin per NPM
 #            Unterstützung A10L5JEZTKKCZ8 VOBOT
+#            UnterstützungA1JJ0KFC4ZPNJ3 ECHO Input
 #            set speak_ssml https://docs.aws.amazon.com/polly/latest/dg/supported-ssml.html
 #            https://developer.amazon.com/de/docs/custom-skills/speech-synthesis-markup-language-ssml-reference.html
 #            get status - Statusinformationen zum Modul
@@ -316,7 +317,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.51q";
+my $ModulVersion     = "0.0.51s";
 my $AWSPythonVersion = "0.0.3";
 my $NPMLoginTyp		 = "unbekannt";
 
@@ -3954,6 +3955,7 @@ sub echodevice_getModel($){
 	elsif($ModelNumber eq "A1NL4BVLQ4L3N3" || $ModelNumber eq "Echo Show")       {return "Echo Show";}
 	elsif($ModelNumber eq "AWZZ5CVHX2CD"   || $ModelNumber eq "Echo Show")       {return "Echo Show Gen2";}
 	elsif($ModelNumber eq "A2M35JJZWCQOMZ" || $ModelNumber eq "Echo Plus")       {return "Echo Plus";}
+	elsif($ModelNumber eq "A1JJ0KFC4ZPNJ3" || $ModelNumber eq "Echo Input")      {return "Echo Input";}
 	elsif($ModelNumber eq "A18O6U1UQFJ0XK" || $ModelNumber eq "Echo Plus 2")     {return "Echo Plus 2";}
 	elsif($ModelNumber eq "AILBSA2LNTOYL"  || $ModelNumber eq "Reverb")          {return "Reverb";}
 	elsif($ModelNumber eq "A15ERDAKK5HQQG" || $ModelNumber eq "Sonos Display")   {return "Sonos Display";}
@@ -4429,8 +4431,9 @@ sub echodevice_NPMLoginNew($){
 
 sub echodevice_NPMLoginRefresh($){
 	my ($hash) = @_;
-	my $name = $hash->{NAME};
-	my $number = $hash->{NR};
+	my $name          = $hash->{NAME};
+	my $number        = $hash->{NR};
+	my $RefreshCookie = ReadingsVal($name , ".COOKIE", "0");
 
 	my $InstallResult = '<html><p><strong>Login Ergebnis</strong></p><br>';
 	my $npm_bin_node  = AttrVal($name,"npm_bin_node","/usr/bin/node");
@@ -4459,12 +4462,22 @@ sub echodevice_NPMLoginRefresh($){
 		return $InstallResult;
 	}
 	
+	# Prüfen ob das Refresh Cookie gültig ist!
+	if (substr($RefreshCookie,0,1) ne "{") { 
+		$InstallResult .= '<p>Das angegebene Refreshtoken Cookie ist ungeueltig! Refreshtoken="<strong>' . $RefreshCookie . '</strong>"</p>';
+		$InstallResult .= '<br><form><input type="button" value="Zur&uuml;ck" onClick="history.go(-1);return true;"></form>';
+		$InstallResult .= "</html>";
+		$InstallResult =~ s/'/&#x0027/g;
+		Log3 $name, 3, "[$name] [echodevice_NPMLoginRefresh] refreshtoken unkown!! refreshtoken=" . $RefreshCookie;
+		return $InstallResult;
+	}
+	
 	my $SkriptContent  = "alexaCookie = require('alexa-cookie2');" . "\n";
 	$SkriptContent    .= "fs = require('fs');" . "\n";
 	$SkriptContent    .= "" . "\n";
 	$SkriptContent    .= "const config = {" . "\n";
 	$SkriptContent    .= "    logger: console.log," . "\n";
-	$SkriptContent    .= "    formerRegistrationData: " . ReadingsVal($name , ".COOKIE", "0") . "\n";
+	$SkriptContent    .= "    formerRegistrationData: " . $RefreshCookie . "\n";
 	$SkriptContent    .= "};" . "\n";
 	$SkriptContent    .= "" . "\n";
 	$SkriptContent    .= "alexaCookie.refreshAlexaCookie(config, (err, result) => {" . "\n";
@@ -4559,12 +4572,12 @@ sub echodevice_NPMWaitForCookie($){
 				if (-e $filename) {unlink $filename;}
 				if (-e "cache/alexa-cookie/" . $number . "create-cookie.js")  {unlink "cache/alexa-cookie/" . $number . "create-cookie.js";}
 				if (-e "cache/alexa-cookie/" . $number . "refresh-cookie.js") {unlink "cache/alexa-cookie/" . $number . "refresh-cookie.js";}
-				
-				echodevice_setState($hash,"connected");
+					
+				echodevice_setState($hash,"connected");				
 			}
 			else {
 				readingsSingleUpdate( $hash, "amazon_refreshtoken", "wait for refreshtoken",1 );
-				Log3 $name, 4, "[$name] [echodevice_NPMWaitForCookie] [$NPMLoginTyp] wait for refreshtoken exist " . $ExistSkript ;
+				Log3 $name, 3, "[$name] [echodevice_NPMWaitForCookie] [$NPMLoginTyp] wait for refreshtoken / refreshtoken unkown!! refreshtoken=" . $_ . " EXIST " . $ExistSkript;
 				InternalTimer(gettimeofday() + 1 , "echodevice_NPMWaitForCookie" , $hash, 0);
 			}
 		}
