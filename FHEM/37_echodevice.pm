@@ -1,13 +1,15 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
-# 2019.01.31 v0.0.51s
+# 2019.02.10 v0.0.51w
 # - BUGFIX:  NPM Proxy IP Adresse / Port usw.
 #            set routine_play - Unterstützung Smart Home Geräte
 #            set speak - Sonderzeichen " entfernen
+#            get conversations https://forum.fhem.de/index.php/topic,82631.msg903955.html#msg903955
 # - FEATURE: Unterstützung AppRegisterLogin per NPM
 #            Unterstützung A10L5JEZTKKCZ8 VOBOT
-#            UnterstützungA1JJ0KFC4ZPNJ3 ECHO Input
+#            Unterstützung A1JJ0KFC4ZPNJ3 ECHO Input
+#            Unterstützung AKPGW064GI9HE Fire TV Stick 4K
 #            set speak_ssml https://docs.aws.amazon.com/polly/latest/dg/supported-ssml.html
 #            https://developer.amazon.com/de/docs/custom-skills/speech-synthesis-markup-language-ssml-reference.html
 #            get status - Statusinformationen zum Modul
@@ -317,7 +319,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.51s";
+my $ModulVersion     = "0.0.51v";
 my $AWSPythonVersion = "0.0.3";
 my $NPMLoginTyp		 = "unbekannt";
 
@@ -354,6 +356,7 @@ sub echodevice_Initialize($) {
 							"browser_useragent_random:0,1 ".
 							"npm_proxy_port ".
 							"npm_proxy_ip ".
+							"npm_proxy_listen_ip ".
 							"npm_refresh_intervall ".
 							"npm_bin ".
 							"npm_bin_node ".
@@ -1985,7 +1988,7 @@ sub echodevice_HandleCmdQueue($) {
 		my $type = $hash->{helper}{".HTTP_CONNECTION"}{type};
         
         $hash->{helper}{RUNNING_REQUEST} = 1;
-        Log3 $name, 4, "[$name] [echodevice_HandleCmdQueue] [$type] send command=" .echodevice_anonymize($hash, $hash->{helper}{".HTTP_CONNECTION"}{url}). " Metode=" . $hash->{helper}{".HTTP_CONNECTION"}{method};
+        Log3 $name, 4, "[$name] [echodevice_HandleCmdQueue] [$type] send command=" .echodevice_anonymize($hash, $hash->{helper}{".HTTP_CONNECTION"}{url}). " Data=" . $hash->{helper}{".HTTP_CONNECTION"}{data};
         HttpUtils_NonblockingGet($hash->{helper}{".HTTP_CONNECTION"});
 		
     }
@@ -3230,7 +3233,7 @@ sub echodevice_Parse($$$) {
 	}
 
 	elsif($msgtype eq "conversations") {
-	
+		
 		my $return = '<html><table align="" border="0" cellspacing="0" cellpadding="3" width="100%" height="100%" class="mceEditable"><tbody>';
 		$return   .= "<p>Conversations:</p>";
 		$return   .= "<tr><td><strong>ID</strong></td><td><strong>Date</strong></td><td><strong>Message</strong></td></tr>";
@@ -3244,13 +3247,13 @@ sub echodevice_Parse($$$) {
 				if(defined($conversation->{lastMessage}{payload}{text})){
 				  $conversations_date = $conversation->{lastMessage}{time};
 				  $conversations_msg  = substr($conversation->{lastMessage}{payload}{text},0,32);
+				  $conversations_msg =~ s/[\x0A\x0D]//g; 
 				} else {
 				  $conversations_msg  = "no previous messages";
 				  $conversations_date = "no date";
 				}
 				$return .= "<tr><td>".$conversation->{conversationId}."&nbsp;&nbsp;&nbsp;</td><td>".$conversations_date."&nbsp;&nbsp;&nbsp;</td><td>".$conversations_msg."&nbsp;&nbsp;&nbsp;</td></tr>";
 			}
-
 		}
 		$return .= "</tbody></table></html>";
 		asyncOutput( $param->{CL}, $return );
@@ -3973,6 +3976,7 @@ sub echodevice_getModel($){
 	elsif($ModelNumber eq "A3HF4YRA2L7XGC" || $ModelNumber eq "Fire TV Cube")    {return "Fire TV Cube";}
 	elsif($ModelNumber eq "ADVBD696BHNV5"  || $ModelNumber eq "Fire TV Stick V1"){return "Fire TV Stick V1";}
 	elsif($ModelNumber eq "A2LWARUGJLBYEW" || $ModelNumber eq "Fire TV Stick V2"){return "Fire TV Stick V2";}
+	elsif($ModelNumber eq "AKPGW064GI9HE"  || $ModelNumber eq "Fire TV Stick 4K"){return "Fire TV Stick 4K";}
 	elsif($ModelNumber eq "A10L5JEZTKKCZ8" || $ModelNumber eq "VOBOT")           {return "VOBOT";}
 	elsif($ModelNumber eq "")               {return "";}
 	elsif($ModelNumber eq "ACCOUNT")        {return "ACCOUNT";}
@@ -4137,7 +4141,6 @@ sub echodevice_getsequenceJson($$$) {
 	elsif(lc($Bereich) eq "beliebig_ich_bin_zuhause") {$BereichString = '\"type\":\"Alexa.CannedTts.Speak\"';$BereichValue  = '\"cannedTtsStringId\":\"alexa.cannedtts.speak.curatedtts-category-iamhome/alexa.cannedtts.speak.curatedtts-random\",';}
 	elsif(lc($Bereich) eq "beliebig_kompliment")      {$BereichString = '\"type\":\"Alexa.CannedTts.Speak\"';$BereichValue  = '\"cannedTtsStringId\":\"alexa.cannedtts.speak.curatedtts-category-compliments/alexa.cannedtts.speak.curatedtts-random\",';}
 	
-	
 	$ResultString   = '{"behaviorId":"PREVIEW","sequenceJson":"{\"@type\":\"com.amazon.alexa.behaviors.model.Sequence\",\"startNode\":{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",' . $BereichString . ',\"operationPayload\":{\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\",\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",'.$BereichValue .'\"locale\":\"de-DE\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\"}}}","status":"ENABLED"}';	
 	
 	return $ResultString;
@@ -4286,6 +4289,9 @@ sub echodevice_NPMLoginNew($){
 		return $InstallResult;
 	}
 	
+	# Proxy Listen IP 
+	my $ProxyListenIP   = AttrVal($name,"npm_proxy_listen_ip",$OwnIP);
+		
 	# Prüfen ob der Port belegt ist
 	my $PORTLoop = "1";
 	my $NetstatFound = "1";
@@ -4343,7 +4349,7 @@ sub echodevice_NPMLoginNew($){
 	$SkriptContent    .= "    setupProxy: true," . "\n";
 	$SkriptContent    .= "    proxyOwnIp: '$ProxyIP'," . "\n";
 	$SkriptContent    .= "    proxyPort: $ProxyPort," . "\n";
-	$SkriptContent    .= "    proxyListenBind: '$ProxyIP'," . "\n";
+	$SkriptContent    .= "    proxyListenBind: '$ProxyListenIP'," . "\n";
 	$SkriptContent    .= "    proxyLogLevel: 'info'" . "\n";
 	$SkriptContent    .= "};" . "\n";
 	$SkriptContent    .= "" . "\n";
