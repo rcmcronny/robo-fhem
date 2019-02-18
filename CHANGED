@@ -1,15 +1,20 @@
-2019.02.10 v0.0.51w
+2019.02.18 v0.0.51z
 - BUGFIX:  NPM Proxy IP Adresse / Port usw.
            set routine_play - Unterstützung Smart Home Geräte
            set speak - Sonderzeichen " entfernen
            get conversations https://forum.fhem.de/index.php/topic,82631.msg903955.html#msg903955                                                        
+           Bluetooth Geräte bereinigen
 - FEATURE: Unterstützung AppRegisterLogin per NPM
            Unterstützung A10L5JEZTKKCZ8 VOBOT
            Unterstützung A1JJ0KFC4ZPNJ3 ECHO Input
            Unterstützung AKPGW064GI9HE Fire TV Stick 4K
+           Unterstützung A37SHHQ3NUL7B5 Bose Home Speaker 500
+           Unterstützung AVN2TMX8MU2YM Bose Home Speaker 500
            set speak_ssml https://docs.aws.amazon.com/polly/latest/dg/supported-ssml.html                                                                
            https://developer.amazon.com/de/docs/custom-skills/speech-synthesis-markup-language-ssml-reference.html                                       
            get status - Statusinformationen zum Modul
-- CHANGE:  https://forum.fhem.de/index.php/topic,82631.msg869460.html#msg869460                                                                          
+           Attribut "ignorevoicecommand" https://forum.fhem.de/index.php/topic,82631.msg906424.html#msg906424                                            
+           Alarme "_recurringPattern" als Reading
+- CHANGE:  https://forum.fhem.de/index.php/topic,82631.msg869460.html#msg869460          
 2019-01-01: initial commit 0.0.50
 
