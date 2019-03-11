@@ -1,3 +1,6 @@
+2019.02.19 v0.0.52
+- FEATURE: Alarme "_originalDate" als Reading
+- BUGFIX:  Readings *_count Wert
 2019.02.18 v0.0.51z
 - BUGFIX:  NPM Proxy IP Adresse / Port usw.
            set routine_play - Unterstützung Smart Home Geräte

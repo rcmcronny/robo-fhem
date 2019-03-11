@@ -1,6 +1,10 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
+# 2019.02.19 v0.0.52
+# - FEATURE: Alarme "_originalDate" als Reading
+# - BUGFIX:  Readings *_count Wert 
+#
 # 2019.02.18 v0.0.51z
 # - BUGFIX:  NPM Proxy IP Adresse / Port usw.
 #            set routine_play - Unterstützung Smart Home Geräte
@@ -324,7 +328,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.51z";
+my $ModulVersion     = "0.0.52";
 my $AWSPythonVersion = "0.0.3";
 my $NPMLoginTyp		 = "unbekannt";
 
@@ -2551,7 +2555,7 @@ sub echodevice_Parse($$$) {
 	}
 
 	readingsBeginUpdate($hash);
-	readingsBulkUpdate($hash, "state", "connected", 1);
+	readingsBulkUpdateIfChanged($hash, "state", "connected", 1);
 	readingsEndUpdate($hash,1);
 
 	# Prüfen ob es sich um ein json String handelt!
@@ -2930,21 +2934,27 @@ sub echodevice_Parse($$$) {
 				$hash->{helper}{$device->{type}}{$device->{deviceSerialNumber}}{$HelperNotifyID}{"originalTime"}     = $device->{originalTime};
 				
 				readingsBulkUpdate( $echohash, lc($device->{type}) . "_" . sprintf("%02d",$NotifiCount) . "_originalTime"  , $device->{originalTime}, 1 );
+				readingsBulkUpdate( $echohash, lc($device->{type}) . "_" . sprintf("%02d",$NotifiCount) . "_originalDate"  , $device->{originalDate}, 1 );
 				readingsBulkUpdate( $echohash, lc($device->{type}) . "_" . sprintf("%02d",$NotifiCount) . "_id"  , $device->{notificationIndex},1);
 				readingsBulkUpdate( $echohash, lc($device->{type}) . "_" . sprintf("%02d",$NotifiCount) . "_status"  , lc($device->{status}),1);
 				readingsBulkUpdate( $echohash, lc($device->{type}) . "_" . sprintf("%02d",$NotifiCount) . "_recurring" , $device->{recurringPattern},1) if (defined($device->{recurringPattern}));
 				readingsBulkUpdate( $echohash, lc($device->{type}) . "_" . sprintf("%02d",$NotifiCount) . "_recurring" , 0,1) if (!defined($device->{recurringPattern}));
 				
 			}
-
 			# Infos im Hash hinterlegen
 			$hash->{helper}{"notifications"}{"_".$device->{deviceSerialNumber}}{"count_" . $device->{type}} = $NotifiCount;
 			$hash->{helper}{"notifications"}{"_".$device->{deviceSerialNumber}}{lc($device->{type})."_aktiv"} = 1;
-
-			readingsBulkUpdate( $echohash, lc($device->{type}) . "_count"  , $NotifiCount,1);
-			
 			readingsEndUpdate($echohash,1);
-			
+		}
+
+		# Notifications Counter setzen
+		foreach my $DeviceID (sort keys %{$modules{$hash->{TYPE}}{defptr}}) { 
+			foreach my $NotifyCounter (sort keys %{$hash->{helper}{"notifications"}{"_".$DeviceID}}) { 
+				if ($NotifyCounter =~ m/count/ ) { 
+					my $echohash = $modules{$hash->{TYPE}}{defptr}{$DeviceID};
+					readingsSingleUpdate($echohash, lc((split ("_", $NotifyCounter))[1]). "_count" ,$hash->{helper}{"notifications"}{"_".$DeviceID}{$NotifyCounter} , 1);
+				}
+			}
 		}
 
 		# Timer neu setzen wenn der Timer gleich abläuft
@@ -3025,7 +3035,9 @@ sub echodevice_Parse($$$) {
 				if (ReadingsVal($DeviceName, "alarm_" . sprintf("%02d",$i) . "_id", "none") ne "none"){
 					readingsDelete($echohash, "alarm_" . sprintf("%02d",$i) . "_id") ;
 					readingsDelete($echohash, "alarm_" . sprintf("%02d",$i) . "_originalTime") ;
+					readingsDelete($echohash, "alarm_" . sprintf("%02d",$i) . "_originalDate") ;
 					readingsDelete($echohash, "alarm_" . sprintf("%02d",$i) . "_status") ;
+					readingsDelete($echohash, "alarm_" . sprintf("%02d",$i) . "_recurring") ;
 				}
 				else {last;}
 			}
@@ -3048,7 +3060,9 @@ sub echodevice_Parse($$$) {
 				if (ReadingsVal($DeviceName, "musicalarm_" . sprintf("%02d",$i) . "_id", "none") ne "none"){
 					readingsDelete($echohash, "musicalarm_" . sprintf("%02d",$i) . "_id") ;
 					readingsDelete($echohash, "musicalarm_" . sprintf("%02d",$i) . "_originalTime") ;
+					readingsDelete($echohash, "musicalarm_" . sprintf("%02d",$i) . "_originalDate") ;
 					readingsDelete($echohash, "musicalarm_" . sprintf("%02d",$i) . "_status") ;
+					readingsDelete($echohash, "musicalarm_" . sprintf("%02d",$i) . "_recurring") ;
 				}
 				else {last;}
 			}
@@ -4104,12 +4118,12 @@ sub echodevice_setState($$) {
 	foreach my $DeviceID (sort keys %{$modules{$hash->{TYPE}}{defptr}}) {
 		my $echohash   = $modules{$hash->{TYPE}}{defptr}{$DeviceID};
 		readingsBeginUpdate($echohash);
-		readingsBulkUpdate( $echohash, "state"  , $State,1);		
+		readingsBulkUpdateIfChanged( $echohash, "state"  , $State,1);		
 		readingsEndUpdate($echohash,1);
 	}
 	
 	readingsBeginUpdate($hash);
-	readingsBulkUpdate($hash, "state", $State, 1);
+	readingsBulkUpdateIfChanged($hash, "state", $State, 1);
 	readingsEndUpdate($hash,1);
 	
 	return;
