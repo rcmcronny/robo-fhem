@@ -1,5 +1,5 @@
 DEL ./FHEM/37_echodevice.pm
-UPD 2019-02-19_08:23:00 216367 FHEM/37_echodevice.pm
+UPD 2019-07-01_09:08:11 216872 FHEM/37_echodevice.pm
 DEL ./www/images/echodevice/echo.svg
 UPD 2019-01-07_12:00:00 24155 www/images/echodevice/echo.svg
 DEL ./FHEM/70_OctoPrint.pm

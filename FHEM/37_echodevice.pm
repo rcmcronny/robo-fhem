@@ -1,6 +1,11 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
+# 2019.02.19 v0.0.53
+# - FEATURE: Unterstützung A4ZP7ZC4PI6TO ECHO 5
+#            Unterstützung A1RTAM01W29CUP Alexa App for PC
+#            Unterstützung A21Z3CGI8UIP0F HEOS
+#
 # 2019.02.19 v0.0.52
 # - FEATURE: Alarme "_originalDate" als Reading
 # - BUGFIX:  Readings *_count Wert 
@@ -3996,6 +4001,7 @@ sub echodevice_getModel($){
 	elsif($ModelNumber eq "A10A33FOX2NUBK" || $ModelNumber eq "Echo Spot")				{return "Echo Spot";}
 	elsif($ModelNumber eq "A1NL4BVLQ4L3N3" || $ModelNumber eq "Echo Show")				{return "Echo Show";}
 	elsif($ModelNumber eq "AWZZ5CVHX2CD"   || $ModelNumber eq "Echo Show")				{return "Echo Show Gen2";}
+	elsif($ModelNumber eq "A4ZP7ZC4PI6TO"  || $ModelNumber eq "Echo Show 5")            {return "Echo Show 5";}
 	elsif($ModelNumber eq "A2M35JJZWCQOMZ" || $ModelNumber eq "Echo Plus")				{return "Echo Plus";}
 	elsif($ModelNumber eq "A1JJ0KFC4ZPNJ3" || $ModelNumber eq "Echo Input")				{return "Echo Input";}
 	elsif($ModelNumber eq "A18O6U1UQFJ0XK" || $ModelNumber eq "Echo Plus 2")			{return "Echo Plus 2";}
@@ -4019,6 +4025,8 @@ sub echodevice_getModel($){
 	elsif($ModelNumber eq "A10L5JEZTKKCZ8" || $ModelNumber eq "VOBOT")           		{return "VOBOT";}
 	elsif($ModelNumber eq "A37SHHQ3NUL7B5" || $ModelNumber eq "Bose Home Speaker 500")	{return "Bose Home Speaker 500";}
 	elsif($ModelNumber eq "AVN2TMX8MU2YM"  || $ModelNumber eq "Bose Home Speaker 500")	{return "Bose Home Speaker 500";}
+	elsif($ModelNumber eq "A1RTAM01W29CUP" || $ModelNumber eq "Alexa App for PC")       {return "Alexa App for PC";}
+	elsif($ModelNumber eq "A21Z3CGI8UIP0F" || $ModelNumber eq "HEOS")                   {return "HEOS";}
 	elsif($ModelNumber eq "")               {return "";}
 	elsif($ModelNumber eq "ACCOUNT")        {return "ACCOUNT";}
 	else {return "unbekannt";}
