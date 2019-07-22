@@ -1,6 +1,9 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
+# 2019.02.19 v0.0.54
+# - FEATURE: Unterstützung A1RABVCI4QCIKC ECHO dot 3
+#
 # 2019.02.19 v0.0.53
 # - FEATURE: Unterstützung A4ZP7ZC4PI6TO ECHO 5
 #            Unterstützung A1RTAM01W29CUP Alexa App for PC
@@ -333,7 +336,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.52";
+my $ModulVersion     = "0.0.54";
 my $AWSPythonVersion = "0.0.3";
 my $NPMLoginTyp		 = "unbekannt";
 
@@ -3998,6 +4001,7 @@ sub echodevice_getModel($){
 	elsif($ModelNumber eq "A3S5BH2HU6VAYF" || $ModelNumber eq "Echo Dot")        		{return "Echo Dot";}
 	elsif($ModelNumber eq "A32DOYMUN6DTXA" || $ModelNumber eq "Echo Dot")        		{return "Echo Dot Gen3";}
 	elsif($ModelNumber eq "A32DDESGESSHZA" || $ModelNumber eq "Echo Dot")				{return "Echo Dot Gen3";}
+	elsif($ModelNumber eq "A1RABVCI4QCIKC" || $ModelNumber eq "Echo Dot")				{return "Echo Dot Gen3";}
 	elsif($ModelNumber eq "A10A33FOX2NUBK" || $ModelNumber eq "Echo Spot")				{return "Echo Spot";}
 	elsif($ModelNumber eq "A1NL4BVLQ4L3N3" || $ModelNumber eq "Echo Show")				{return "Echo Show";}
 	elsif($ModelNumber eq "AWZZ5CVHX2CD"   || $ModelNumber eq "Echo Show")				{return "Echo Show Gen2";}
