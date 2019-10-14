@@ -1,6 +1,9 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
+# 2019.10.09 v0.0.56
+# - FEATURE: Hintergrundbild ECHO SHOW ändern "set homescreen"
+#
 # 2019.09.20 v0.0.55
 # - CHANGE:  speak_volume Auswertung Account-Device/Echo-Device
 #            DEF xxx@xxx.de xxx = NPM Login Modus
@@ -341,7 +344,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.55";
+my $ModulVersion     = "0.0.56";
 my $AWSPythonVersion = "0.0.3";
 my $NPMLoginTyp		 = "unbekannt";
 
@@ -759,6 +762,8 @@ sub echodevice_Set($@) {
 		else {
 			$usage .= 'volume:slider,0,1,100 play:noArg pause:noArg next:noArg previous:noArg forward:noArg rewind:noArg shuffle:on,off repeat:on,off dnd:on,off volume_alarm:slider,0,1,100 ';
 			$usage .= 'info:Beliebig_Auf_Wiedersehen,Beliebig_Bestaetigung,Beliebig_Geburtstag,Beliebig_Guten_Morgen,Beliebig_Gute_Nacht,Beliebig_Ich_Bin_Zuhause,Beliebig_Kompliment,Erzaehle_Geschichte,Erzaehle_Was_Neues,Erzaehle_Witz,Kalender_Heute,Kalender_Morgen,Kalender_Naechstes_Ereignis,Nachrichten,Singe_Song,Verkehr,Wetter tunein primeplaylist primeplaysender primeplayeigene primeplayeigeneplaylist alarm_normal alarm_repeat reminder_normal reminder_repeat speak speak_ssml tts tts_translate:textField-long playownmusic:textField-long saveownplaylist:textField-long ';
+			
+			$usage .= 'homescreen ' if ($hash->{model} eq "Echo Show 5" || $hash->{model} eq "Echo Show" || $hash->{model} eq "Echo Show Gen2"); 
 			
 			# startownplaylist
 			$usage .= echodevice_GetOwnPlaylist($hash);
@@ -1475,6 +1480,11 @@ sub echodevice_Set($@) {
 		return "No argument given." if ( !defined($a[0]) );
 		echodevice_SendCommand($hash,$command,join(' ',@a));
 	}
+
+	elsif($command eq "homescreen"){
+		return "No argument given." if ( !defined($a[0]) );
+		echodevice_SendCommand($hash,$command,join(' ',@a));
+	}
 	
 	else {
 		echodevice_SendMessage($hash,$command,$parameter);
@@ -1938,7 +1948,11 @@ sub echodevice_SendCommand($$$) {
 		# Sonderzeichen entfernen
 		$SendData =~s/"/'/g;
 	
-		if(AttrVal($name,"speak_volume",0) > 0){
+		my $SpeakVolume;
+		$SpeakVolume = int(AttrVal($hash->{IODev}{NAME},"speak_volume",0));
+		$SpeakVolume = int(AttrVal($name,"speak_volume",0)) if($SpeakVolume == 0);
+
+		if($SpeakVolume > 0){
 			$SendData = '{"behaviorId":"PREVIEW","sequenceJson":"{\"@type\":\"com.amazon.alexa.behaviors.model.Sequence\",\"startNode\":{\"@type\":\"com.amazon.alexa.behaviors.model.SerialNode\",\"nodesToExecute\":[{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.DeviceControls.Volume\",\"operationPayload\":{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"locale\":\"de-DE\",\"value\":\"'.$SpeakVolume.'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\"}},{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"AlexaAnnouncement\",\"operationPayload\":{\"expireAfter\":\"PT5S\",\"content\":[{\"locale\":\"\",\"display\":{\"title\":\"FHEM\",\"body\":\"Speak\"},\"speak\":{\"type\":\"ssml\",\"value\":\"' . $SendData . '\"}}],\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"target\":{\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"devices\":[{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"deviceTypeId\":\"' . $hash->{helper}{DEVICETYPE} . '\"}]}}},{\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"type\":\"Alexa.DeviceControls.Volume\",\"operationPayload\":{\"deviceSerialNumber\":\"' . $hash->{helper}{".SERIAL"} . '\",\"customerId\":\"' . $hash->{IODev}->{helper}{".CUSTOMER"} .'\",\"locale\":\"de-DE\",\"value\":\"'.ReadingsVal($name , "volume", 50).'\",\"deviceType\":\"' . $hash->{helper}{DEVICETYPE} . '\"}}]}}","status":"ENABLED"}'
 		}
 		else {
@@ -1946,6 +1960,16 @@ sub echodevice_SendCommand($$$) {
 		}
 	
 		$SendDataL  = $SendData;
+	}
+	
+	elsif ($type eq "homescreen" ) {
+		$SendUrl   .= "/api/background-image";
+		$SendMetode = "POST";	
+		
+		$SendData = '{"backgroundImageID":"JqIFZhtBTx25wLGTJGdNGQ","backgroundImageType":"PERSONAL_PHOTOS","backgroundImageURL":"'.$SendData.'","deviceSerialNumber":"'.$hash->{helper}{".SERIAL"}.'","deviceType":"'.$hash->{helper}{DEVICETYPE}.'","softwareVersion":"'.$hash->{helper}{VERSION}.'"}';
+		
+		$SendDataL = $SendData;	
+	
 	}
 	
 	else {
