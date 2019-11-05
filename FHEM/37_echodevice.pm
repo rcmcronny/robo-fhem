@@ -1,6 +1,13 @@
 # $Id: 37_echodevice.pm 15724 2017-12-29 22:59:44Z michael.winkler $
 ##############################################
 #
+# 2019.11.05 v0.0.59
+# - FEATURE: Nachricht an Handy App schicken "set mobilmessage"
+# - CHANGE:  Hilfetexte erweitert
+#
+# 2019.10.27 v0.0.58
+# - FEATURE: Unterstützung A30YDR2MK8HMRV ECHO Gen 3
+#
 # 2019.10.17 v0.0.57
 # - FEATURE: Unterstützung A3FX4UWTP28V1P ECHO Gen 3
 #
@@ -347,7 +354,7 @@ use Time::Piece;
 use lib ('./FHEM/lib', './lib');
 use MP3::Info;
 
-my $ModulVersion     = "0.0.57";
+my $ModulVersion     = "0.0.59";
 my $AWSPythonVersion = "0.0.3";
 my $NPMLoginTyp		 = "unbekannt";
 
@@ -728,7 +735,7 @@ sub echodevice_Set($@) {
 	if($hash->{model} eq "ACCOUNT") {
 		$usage .= 'autocreate_devices:noArg item_shopping_add item_task_add ';
 		$usage .= 'AWS_Access_Key AWS_Secret_Key TTS_IPAddress TTS_Filename TTS_TuneIn POM_TuneIn POM_IPAddress POM_Filename AWS_OutputFormat:mp3,ogg_vorbis,pcm textmessage ';# if(defined($hash->{helper}{".COMMSID"}));
-		$usage .= 'config_address_from config_address_to config_address_between ';
+		$usage .= 'config_address_from config_address_to config_address_between mobilmessage ';
 		$usage .= 'login:noArg loginwithcaptcha login2FACode ' if($hash->{LOGINMODE} eq "NORMAL");
 		$usage .= 'NPM_install:noArg NPM_login:new,refresh '   if($hash->{LOGINMODE} eq "NPM");
 		
@@ -833,7 +840,6 @@ sub echodevice_Set($@) {
 
 	return $usage if $command eq '?';
 
-
 	#return echodevice_Login($hash) if($command eq "login");
 	return echodevice_SendLoginCommand($hash,"cookielogin1","") if($command eq "login");
 	
@@ -842,21 +848,21 @@ sub echodevice_Set($@) {
 	}
 
 	if($command eq "NPM_login"){ 
-		return "No argument given."        		 if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg")  if ( !defined($a[0]) );
 		return echodevice_NPMLoginNew($hash)     if ($a[0] eq "new") ;
 		return echodevice_NPMLoginRefresh($hash) if ($a[0] eq "refresh");
 	}
 	
 	if($command eq "loginwithcaptcha"){
-		return "HTML Result file does exits. Pleas activate the attribut browser_save_data" if ((!-e $FW_dir . "/echodevice/results/". $name . "_cookielogin4.html"));
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("HTML Result file does exits. Pleas activate the attribut browser_save_data") if ((!-e $FW_dir . "/echodevice/results/". $name . "_cookielogin4.html"));
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		$hash->{helper}{CAPTCHA} = $a[0];
         echodevice_SendLoginCommand($hash,"cookielogin4captcha","");		
 		return;
 	}
 	
 	if($command eq "login2FACode"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		$hash->{helper}{TWOFA} = $a[0];
         echodevice_SendLoginCommand($hash,"cookielogin4","");		
 		return;
@@ -879,7 +885,7 @@ sub echodevice_Set($@) {
 	
 	# Allgemeine Einstellungen
 	if($command eq "bluetooth_connect"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 
 		my @parameters = split("/",$a[0]);
 		$parameters[0] =~ s/-/:/g;
@@ -895,7 +901,7 @@ sub echodevice_Set($@) {
 	}
 	
 	elsif($command eq "bluetooth_disconnect"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 
 		my @parameters = split("/",$a[0]);
 		$parameters[0] =~ s/-/:/g;
@@ -906,7 +912,7 @@ sub echodevice_Set($@) {
 	}
 	
 	elsif($command eq "dnd"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		
 		my $json = encode_json( { deviceSerialNumber => $hash->{helper}{".SERIAL"},
                                           deviceType => $hash->{helper}{DEVICETYPE},
@@ -919,7 +925,7 @@ sub echodevice_Set($@) {
 	}
 	
 	elsif($command eq "volume") {
-		return "No argument given" if ( !defined( $a[0] ) );
+		return echodevice_getHelpText("no arg") if ( !defined( $a[0] ) );
 	
 		# Voluemeangabe prüfen
 		if ($a[0] >= 0 && $a[0] <= 100 ) {
@@ -929,12 +935,12 @@ sub echodevice_Set($@) {
 			echodevice_SendCommand($hash,"volume",$a[0]);
    		}
 		else {
-			return "Argument $a[0] does not seem to be a valid integer between 0 and 100";
+			return echodevice_getHelpText("Argument $a[0] does not seem to be a valid integer between 0 and 100");
 		}
 	}
 
 	elsif($command eq "volume_alarm") {
-		return "No argument given" if ( !defined( $a[0] ) );
+		return echodevice_getHelpText("no arg") if ( !defined( $a[0] ) );
 		# Voluemeangabe prüfen
 		if ($a[0] >= 0 && $a[0] <= 100 ) {
 		
@@ -948,7 +954,7 @@ sub echodevice_Set($@) {
 			echodevice_SendCommand($hash,"volume_alarm",$json);
    		}
 		else {
-			return "Argument $a[0] does not seem to be a valid integer between 0 and 100";
+			return echodevice_getHelpText("Argument $a[0] does not seem to be a valid integer between 0 and 100");
 		}
 	} 
 	
@@ -958,7 +964,7 @@ sub echodevice_Set($@) {
 	
 	# Listen
 	elsif($command eq "item_task_delete" ) {
-		return "No argument given." if ( !defined($parameter) );
+		return echodevice_getHelpText("no arg") if ( !defined($parameter) );
 		
 		my $json = JSON->new->utf8(1)->encode( {'type' => "TASK",
 												'text' => decode_utf8($parameter),
@@ -986,7 +992,7 @@ sub echodevice_Set($@) {
 	} 
 
 	elsif($command eq "item_shopping_delete" ) {
-		return "No argument given." if ( !defined($parameter) );
+		return echodevice_getHelpText("no arg") if ( !defined($parameter) );
 
 		my $json = JSON->new->utf8(1)->encode( { 'type' => "SHOPPING_ITEM",
 												 'text' => decode_utf8($parameter),
@@ -1015,7 +1021,7 @@ sub echodevice_Set($@) {
 	} 
 
 	elsif($command eq "item_task_add" ) {
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		my $json = JSON->new->utf8(1)->encode( { 'type' => "TASK",
 												 'text' => decode_utf8($parameter),
 										  'createdDate' => int(time),
@@ -1037,7 +1043,7 @@ sub echodevice_Set($@) {
 	} 
 
 	elsif($command eq "item_shopping_add" ) {
-		return "No argument given." if ( !defined($parameter) );
+		return echodevice_getHelpText("no arg") if ( !defined($parameter) );
 
 		my $json = JSON->new->utf8(1)->encode( { 'type' => "SHOPPING_ITEM",
 												 'text' => decode_utf8($parameter),
@@ -1061,7 +1067,7 @@ sub echodevice_Set($@) {
 		
 	# Erinnerungen / Timer / Wecker
 	elsif($command eq "reminder_normal" || $command eq "alarm_normal") {
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		
 		my $reminder_delay = AttrVal($name, "reminder_delay", 10);
 		my $ReminderText ;
@@ -1120,7 +1126,7 @@ sub echodevice_Set($@) {
 	} 
   
 	elsif($command eq "reminder_repeat" || $command eq "alarm_repeat") {
-		return "There are some arguments missing. [Zeitangabe] [Wiederholumgsmode] nachrichtentext " if ( !defined($a[0]) );
+		return echodevice_getHelpText("There are some arguments missing. [Zeitangabe] [Wiederholumgsmode] nachrichtentext ") if ( !defined($a[0]) );
 		
 		my $Type;
 		
@@ -1179,7 +1185,7 @@ sub echodevice_Set($@) {
     
 	elsif($command eq "notifications_delete"){
 
-		return "No argument given" if ( !defined($a[0]));
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]));
 
 		my @parameters = split("@",$parameter);
 		
@@ -1190,29 +1196,34 @@ sub echodevice_Set($@) {
 	}
 
 	elsif($command eq "alarm_off"){
-		return "No argument given" if ( !defined($a[0]));
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]));
 		echodevice_SendCommand($hash,"alarm_off",$a[0]);
 	}
 
 	elsif($command eq "alarm_on"){
-		return "No argument given" if ( !defined($a[0]));
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]));
 		echodevice_SendCommand($hash,"alarm_on",$parameter);
 	}
 	
 	# Routinen
 	elsif($command eq "routine_play"){
-		return "No argument given" if ( !defined($a[0]));
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]));
 		echodevice_SendCommand($hash,"routine_play",$parameter);
 	}
 	
 	# Nachrichten
 	elsif($command eq "textmessage"){
-		return "No argument given." if ( !defined($a[0]) );
-		return "There are some arguments missing. [conversationId] nachrichtentext " if ( !defined($a[1]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
+		return echodevice_getHelpText("There are some arguments missing. [conversationId] nachrichtentext ") if ( !defined($a[1]) );
 	
 		echodevice_SendCommand($hash,$command,join(' ',@a));
 	} 
- 
+
+	elsif($command eq "mobilmessage"){
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
+		echodevice_SendCommand($hash,$command,join(' ',@a));
+	} 
+  
 	elsif($command eq "message_delete"){
 
 		#return "No argument given" if ( !defined($a[0]));
@@ -1231,7 +1242,7 @@ sub echodevice_Set($@) {
 
 		my $tuneinID ;
 		if ( !defined($a[0]) && AttrVal($name,"tunein_default","none") eq "none" ) {
-			return "No argument given. You can set attribut tunein_default!";
+			return echodevice_getHelpText("No argument given. You can set attribut tunein_default!");
 		}
 		elsif (!defined($a[0]))	{$tuneinID = AttrVal($name,"tunein_default","none");}
 		else 					{$tuneinID = $a[0];}
@@ -1248,7 +1259,7 @@ sub echodevice_Set($@) {
 	}
   
 	elsif($command eq "primeplaylist"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		
 		# Reading festhalten
 		readingsBeginUpdate($hash);
@@ -1263,7 +1274,7 @@ sub echodevice_Set($@) {
 	}
 	
 	elsif($command eq "primeplayeigeneplaylist"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		
 		# Reading festhalten
 		readingsBeginUpdate($hash);
@@ -1278,7 +1289,7 @@ sub echodevice_Set($@) {
 	} 
 
 	elsif($command eq "primeplaysender"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		
 		# Reading festhalten
 		readingsBeginUpdate($hash);
@@ -1293,7 +1304,7 @@ sub echodevice_Set($@) {
 	} 
 	
 	elsif($command eq "primeplayeigene"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 	
 		# Reading festhalten
 		readingsBeginUpdate($hash);
@@ -1310,7 +1321,7 @@ sub echodevice_Set($@) {
 
 	elsif($command eq "track"){
 		
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		
 		# Reading festhalten
 		readingsBeginUpdate($hash);
@@ -1342,11 +1353,11 @@ sub echodevice_Set($@) {
 	
 	elsif($command eq "tts") {
 
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		
-		return "TTS can not play. The ECHO device $name is playing other media." if (AttrVal($hash->{IODev}->{NAME},"TTS_IgnorPlay",1) == 0 && ReadingsVal( $name, "playStatus", "stopped") eq "playing" && ReadingsVal($name , "currentTuneInID", "-") eq "-");
-		return "TTS can not play. The ECHO device $name is playing other media." if (AttrVal($name,"TTS_IgnorPlay",1) == 0 && ReadingsVal( $name, "playStatus", "stopped") eq "playing" && ReadingsVal($name , "currentTuneInID", "-") eq "-");
-		return "TTS can not play. Please define TTS_IPAdrees at the ECHO ACCOUNT DEVICE " . $hash->{IODev}->{NAME} if (ReadingsVal($hash->{IODev}->{NAME} , lc("TTS_IPAddress"), "none") eq "none");
+		return echodevice_getHelpText("TTS can not play. The ECHO device $name is playing other media.") if (AttrVal($hash->{IODev}->{NAME},"TTS_IgnorPlay",1) == 0 && ReadingsVal( $name, "playStatus", "stopped") eq "playing" && ReadingsVal($name , "currentTuneInID", "-") eq "-");
+		return echodevice_getHelpText("TTS can not play. The ECHO device $name is playing other media.") if (AttrVal($name,"TTS_IgnorPlay",1) == 0 && ReadingsVal( $name, "playStatus", "stopped") eq "playing" && ReadingsVal($name , "currentTuneInID", "-") eq "-");
+		return echodevice_getHelpText("TTS can not play. Please define TTS_IPAdrees at the ECHO ACCOUNT DEVICE " . $hash->{IODev}->{NAME}) if (ReadingsVal($hash->{IODev}->{NAME} , lc("TTS_IPAddress"), "none") eq "none");
 		
 		my $TTS_Voice  = AttrVal($name,"TTS_Voice","German_Female_Google"); 
 		
@@ -1361,11 +1372,11 @@ sub echodevice_Set($@) {
 
 	elsif($command eq "tts_translate") {
 
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		
-		return "TTS can not play. The ECHO device $name is playing other media." if (AttrVal($hash->{IODev}->{NAME},"TTS_IgnorPlay",1) == 0 && ReadingsVal( $name, "playStatus", "stopped") eq "playing" && ReadingsVal($name , "currentTuneInID", "-") eq "-");
-		return "TTS can not play. The ECHO device $name is playing other media." if (AttrVal($name,"TTS_IgnorPlay",1) == 0 && ReadingsVal( $name, "playStatus", "stopped") eq "playing" && ReadingsVal($name , "currentTuneInID", "-") eq "-");
-		return "TTS can not play. Please define TTS_IPAdrees at the ECHO ACCOUNT DEVICE " . $hash->{IODev}->{NAME} if (ReadingsVal($hash->{IODev}->{NAME} , lc("TTS_IPAddress"), "none") eq "none");
+		return echodevice_getHelpText("TTS can not play. The ECHO device $name is playing other media.") if (AttrVal($hash->{IODev}->{NAME},"TTS_IgnorPlay",1) == 0 && ReadingsVal( $name, "playStatus", "stopped") eq "playing" && ReadingsVal($name , "currentTuneInID", "-") eq "-");
+		return echodevice_getHelpText("TTS can not play. The ECHO device $name is playing other media.") if (AttrVal($name,"TTS_IgnorPlay",1) == 0 && ReadingsVal( $name, "playStatus", "stopped") eq "playing" && ReadingsVal($name , "currentTuneInID", "-") eq "-");
+		return echodevice_getHelpText("TTS can not play. Please define TTS_IPAdrees at the ECHO ACCOUNT DEVICE " . $hash->{IODev}->{NAME}) if (ReadingsVal($hash->{IODev}->{NAME} , lc("TTS_IPAddress"), "none") eq "none");
 		
 		my $TTS_Voice           = AttrVal($name,"TTS_Voice","German_Female_Google"); 
 		my $TTS_Translate_From  = AttrVal($name,"TTS_Translate_From","german"); 
@@ -1423,7 +1434,7 @@ sub echodevice_Set($@) {
 		elsif ($TTS_Translate_From eq "turkish")    {$TTS_CodeInput = "tr"}
 		
 		if ($TTS_CodeInput eq $TTS_CodeOutput) {
-			return "TTS can not play. Please define other TTS_Voice or TTS_Translate_From. Input and output languages are the same!";			
+			return echodevice_getHelpText("TTS can not play. Please define other TTS_Voice or TTS_Translate_From. Input and output languages are the same!");			
 		}
 		
 		my $json = "{ dirCode:'" . $TTS_CodeInput . "-" . $TTS_CodeOutput . "', template:'General', text:'" .urlEncode($parameter) . "', lang:'de', limit:'3000',useAutoDetect:false, key:'123', ts:'MainSite',tid:'', IsMobile:false}";
@@ -1433,59 +1444,46 @@ sub echodevice_Set($@) {
 	}	
 	
 	elsif($command eq "playownmusic") {
-
-		return "No argument given." if ( !defined($a[0]) );
-	
-		return "POM can not play. Please define POM_IPAdrees at the ECHO ACCOUNT DEVICE " . $hash->{IODev}->{NAME} if (ReadingsVal($hash->{IODev}->{NAME} , lc("POM_IPAddress"), "none") eq "none");
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
+		return echodevice_getHelpText("POM can not play. Please define POM_IPAdrees at the ECHO ACCOUNT DEVICE ") . $hash->{IODev}->{NAME} if (ReadingsVal($hash->{IODev}->{NAME} , lc("POM_IPAddress"), "none") eq "none");
  		echodevice_PlayOwnMP3($hash,$parameter);
-
 	}
 
 	elsif($command eq "saveownplaylist") {
-
-		return "No argument given." if ( !defined($a[0]) );
-	
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
  		echodevice_SaveOwnPlaylist($hash,$parameter);
-
 	}
 
 	elsif($command eq "playownplaylist") {
-
-		return "No argument given." if ( !defined($a[0]) );
-		
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		my $WEBAddress = ReadingsVal($hash->{IODev}->{NAME} , lc("POM_IPAddress"), "none");
-		return "POM can not play. Please define POM_IPAdrees at the ECHO ACCOUNT DEVICE " . $hash->{IODev}->{NAME} if ($WEBAddress eq "none");	
-	
+		return echodevice_getHelpText("POM can not play. Please define POM_IPAdrees at the ECHO ACCOUNT DEVICE ") . $hash->{IODev}->{NAME} if ($WEBAddress eq "none");	
  		echodevice_PlayOwnMP3($hash,"http://" . $WEBAddress . "/playlists/" . $parameter);
-
 	}
 
 	elsif($command eq "deleteownplaylist") {
-
-		return "No argument given." if ( !defined($a[0]) );
-	
+		return echodevice_getHelpText("no arg")if ( !defined($a[0]) );
 		# Playliste löschen
 		if ((-e $FW_dir . "/echodevice/playlists/". $parameter)) {unlink $FW_dir . "/echodevice/playlists/".$parameter}
-
 	}
 
 	elsif($command eq "speak"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		echodevice_SendCommand($hash,$command,join(' ',@a));
 	}
 
 	elsif($command eq "speak_ssml"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		echodevice_SendCommand($hash,$command,join(' ',@a));
 	}
 	
 	elsif($command eq "info"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		echodevice_SendCommand($hash,$command,join(' ',@a));
 	}
 
 	elsif($command eq "homescreen"){
-		return "No argument given." if ( !defined($a[0]) );
+		return echodevice_getHelpText("no arg") if ( !defined($a[0]) );
 		echodevice_SendCommand($hash,$command,join(' ',@a));
 	}
 	
@@ -1682,6 +1680,15 @@ sub echodevice_SendCommand($$$) {
 		my $AlexaDSN  = $hash->{helper}{".SERIAL"};
 		$SendData =~ s/ALEXA_CURRENT_DEVICE_TYPE/$AlexaType/g;
 		$SendData =~ s/ALEXA_CURRENT_DSN/$AlexaDSN/g;
+		$SendDataL = $SendData;
+	}
+	
+	elsif ($type eq "mobilmessage") {
+		$SendUrl   .= "/api/behaviors/preview";
+		$SendMetode = "POST";
+		my $Messagetext = $SendData;
+		$Messagetext =~ s/"/'/g;
+		$SendData   = '{"behaviorId":"PREVIEW","sequenceJson":"{\"@type\":\"com.amazon.alexa.behaviors.model.Sequence\",\"startNode\":{\"operationPayload\":{\"notificationMessage\":\"' . $Messagetext .'\",\"alexaUrl\":\"#v2/behaviors\",\"customerId\":\"' . $hash->{helper}{".CUSTOMER"} .'\",\"title\":\"FHEM\"},\"type\":\"Alexa.Notifications.SendMobilePush\",\"@type\":\"com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode\",\"skillId\":\"amzn1.ask.1p.routines.messaging\",\"name\":null},\"sequenceId\":\"amzn1.alexa.sequence.8f5aa289-c6d4-4a6f-a1b9-5b182e23be1e\"}","status":"ENABLED"}';
 		$SendDataL = $SendData;
 	}
 	
@@ -4098,6 +4105,7 @@ sub echodevice_getModel($){
 	elsif($ModelNumber eq "A1JJ0KFC4ZPNJ3" || $ModelNumber eq "Echo Input")				{return "Echo Input";}
 	elsif($ModelNumber eq "A18O6U1UQFJ0XK" || $ModelNumber eq "Echo Plus 2")			{return "Echo Plus 2";}
 	elsif($ModelNumber eq "A3FX4UWTP28V1P" || $ModelNumber eq "Echo")					{return "Echo Gen3";}
+	elsif($ModelNumber eq "A30YDR2MK8HMRV" || $ModelNumber eq "Echo")					{return "Echo Gen3";}
 	elsif($ModelNumber eq "AILBSA2LNTOYL"  || $ModelNumber eq "Reverb")					{return "Reverb";}
 	elsif($ModelNumber eq "A15ERDAKK5HQQG" || $ModelNumber eq "Sonos Display")			{return "Sonos Display";}
 	elsif($ModelNumber eq "A2OSP3UA4VC85F" || $ModelNumber eq "Sonos One")				{return "Sonos One";}
@@ -4124,6 +4132,23 @@ sub echodevice_getModel($){
 	elsif($ModelNumber eq "ACCOUNT")        {return "ACCOUNT";}
 	else {return "unbekannt";}
 
+}
+
+sub echodevice_getHelpText($){
+	my ($HelpTextType) = @_;
+	my $ReturnHelpText = "<html><p><strong>Help:</strong></p>";
+	
+	if   ($HelpTextType eq "no arg") {
+		$ReturnHelpText .= "No argument given.";
+	}
+	else {
+		$ReturnHelpText .= $HelpTextType;
+	}
+
+	#Allgemeine Infos
+	$ReturnHelpText .= "<br><br>More informations: <a target=" . "_blank" . " href=" .'"' . 'https://mwinkler.jimdo.com/smarthome/eigene-module/echodevice/#Set' .'"'. "</a>https://mwinkler.jimdo.com/smarthome/eigene-module/echodevice/#Set</html>";
+
+	return $ReturnHelpText;
 }
 
 sub echodevice_Attr($$$) {
