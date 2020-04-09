@@ -1,5 +1,3 @@
-DEL ./www/images/echodevice/echo.svg
 DEL ./FHEM/96_Snapcast.pm
-UPD 2019-01-07_15:58:35 24155   www/images/echodevice/echo.svg
 UPD 2019-11-21_08:29:48 34313   FHEM/96_Snapcast.pm
 UPD 2019-12-31_09:19:17 12903   FHEM/98_livetrackingconn.pm
