@@ -1,4 +1,2 @@
-DEL ./FHEM/96_Snapcast.pm
-UPD 2019-11-21_08:29:48 34313   FHEM/96_Snapcast.pm
 UPD 2020-07-27_11:17:05 27276   FHEM/98_homezone.pm
 UPD 2019-12-31_09:19:17 12903   FHEM/98_livetrackingconn.pm
