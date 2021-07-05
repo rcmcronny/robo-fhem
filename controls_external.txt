@@ -1,2 +1,4 @@
+UPD 2021-07-05_11:04:34 10953   FHEM/55_ShinobiMonitor.pm
+UPD 2021-07-05_11:04:34 6362    FHEM/55_Shinobi.pm
 UPD 2020-07-27_11:17:05 27276   FHEM/98_homezone.pm
 UPD 2019-12-31_09:19:17 12903   FHEM/98_livetrackingconn.pm
