@@ -1,4 +1,4 @@
-FW_version["HMinfoTools.js"] = "$Id: HMinfoTools.js 2004 2021-11-28 12:00:00Z frank $";
+FW_version["HMinfoTools.js"] = "$Id: HMinfoTools.js 2005 2021-12-02 18:00:00Z frank $";
 
 var HMinfoTools_debug = true;
 var HMinfoTools_csrf;
@@ -147,8 +147,6 @@ function HMinfoTools_getAllRssiData() {
 					var c0 = document.createElement('td');
 					row.appendChild(c0);
 					c0.style.color = 'lightblue';
-					//c0.setAttribute('href', '/fhem?detail=' + key);
-					//else {ioInfo = ioInfo.replace(vccu,'<a href="/fhem?detail='+vccu+'" style="color: '+color+';">'+vccu+'</a>');}
 					if(r == 0) {c0.innerHTML = '<a href="/fhem?detail=' +key+ '">' +key+ '</a>';}
 					var c1 = document.createElement('td');
 					row.appendChild(c1);
@@ -157,7 +155,8 @@ function HMinfoTools_getAllRssiData() {
 					var c2 = document.createElement('td');
 					row.appendChild(c2);
 					c2.align = 'left';
-					c2.innerHTML = '<a href="/fhem?detail=' +devObj.rssiArr[r].from+ '">' +devObj.rssiArr[r].from+ '</a>';
+					var fromDevName = devObj.rssiArr[r].from.replace(/\/.+$/,'');
+					c2.innerHTML = '<a href="/fhem?detail=' +fromDevName+ '">' +devObj.rssiArr[r].from+ '</a>';
 					var c3 = document.createElement('td');
 					row.appendChild(c3);
 					c3.align = 'right';
@@ -314,6 +313,7 @@ function HMinfoTools_getAllRssiData() {
 			}
 			$(div).dialog({ dialogClass:'no-close', modal:true, width:$('#HMinfoTools_rssiTable').width()*1.1, closeOnEscape:true, 
 											maxWidth:$(window).width()*0.9, maxHeight:$(window).height()*0.9,
+											//maxWidth:$(window).width()*0.9, height: 'auto+20', 
 											buttons: [{text:'All Changed On', click:function(){doAllOnOff(true);}},
 																{text:'All Off', click:function(){doAllOnOff(false);}},
 																{text:'Set IOgrp', click:function(){doSetIOgrp();}},
@@ -599,27 +599,30 @@ function HMinfoTools_parseErrorDevices(hminfo,weblinkdiv) {
 
 function HMinfoTools_createHMinfoTools(hminfo,weblinkdiv,lastChange) {
 	var div = document.createElement('div');
+	var header;
 	if(weblinkdiv == null) {
 		// we will insert the table before the internals
 		var intdiv = document.querySelector('div.makeTable.wide.internals');
 		intdiv.parentElement.insertBefore(div,intdiv);
+		header = intdiv.firstElementChild.cloneNode(false);
 	}
-	else {weblinkdiv.appendChild(div);}
+	else {
+		weblinkdiv.appendChild(div);
+		header = document.createElement('div');
+		header.setAttribute('class','col_header pinHeader detail_Internals');
+	}
 	div.id = 'hminfotools';
-	div.setAttribute('device',hminfo);            //name of hminfo device
-	
+	div.setAttribute('device',hminfo);            // name of hminfo device
 	div.setAttribute('installation','init');      // init, ready
 	div.setAttribute('loaded_icons','init');      // 0_icons: "init"; 9_icons: "9"
 	div.setAttribute('errordevices_data','init'); // init, start, first, ready
 	div.setAttribute('errordevices_list','init'); // list of current errorDevices
 	div.setAttribute('lost','0');                 // list of lost connections
-	
-	//div.setAttribute('class','makeTable wide');
 	div.setAttribute('class','makeTable wide internals');
-	var header = document.createElement('span');
+	
+	//var header = document.createElement('div');
 	div.appendChild(header);
-	//header.setAttribute('class','col_header pinHeader');
-	header.setAttribute('class','mkTitle');
+  //header.setAttribute('class','col_header pinHeader detail_Internals');
 	header.innerHTML = '<a href="/fhem?detail=' +hminfo+ '">HMinfoTools</a>';
 	
 	const elementToObserve = div;
@@ -684,27 +687,29 @@ function HMinfoTools_createHMinfoTools(hminfo,weblinkdiv,lastChange) {
 	var info = document.createElement('span');
 	div.appendChild(info);
 	info.id = 'hminfo_info';
-	info.setAttribute('class','mkTitle');
 	info.innerHTML = ' => waiting for problems...';
 	var table = document.createElement('table');
 	div.appendChild(table);
 	table.id = 'devicetable';
-	//table.setAttribute('class','block wide internals wrapcolumns');
 	table.setAttribute('class','block wide internals');
+	table.style.backgroundColor = '#333333';
+	table.style.color = '#CCCCCC';
 	var thead = document.createElement('thead');
 	table.appendChild(thead);
+	thead.style.backgroundColor = '#111111';
 	var tr = document.createElement('tr');
 	thead.appendChild(tr);
-	tr.setAttribute('class','odd');
 	var icons = document.createElement('td');
 	tr.appendChild(icons);
 	icons.style.whiteSpace = 'nowrap';
 	HMinfoTools_loadIcons(hminfo,icons); //################################################################
+	
 	var td = document.createElement('td');
-	tr.appendChild(td);
+	tr.appendChild(td);	
 	var ios = document.createElement('span');
 	td.appendChild(ios);
 	ios.id = 'hminfo_ios';
+	
 	var td = document.createElement('td');
 	tr.appendChild(td);
 	var left = document.createElement('td');
@@ -712,6 +717,7 @@ function HMinfoTools_createHMinfoTools(hminfo,weblinkdiv,lastChange) {
 	var change = document.createElement('span');
 	left.appendChild(change);
 	change.id = 'hminfo_change';
+	change.style.whiteSpace = 'nowrap';
 	change.innerHTML = lastChange;
 	
 	var right = document.createElement('td');
@@ -724,7 +730,7 @@ function HMinfoTools_createHMinfoTools(hminfo,weblinkdiv,lastChange) {
 	edit.title = 'rssi overview';
 	edit.style.cursor = 'pointer';
 	edit.setAttribute('onclick','HMinfoTools_getAllRssiData()');
-	var cmd = "{FW_makeImage('rc_SETUP')}";
+	var cmd = "{FW_makeImage('rc_SETUP@white')}";
 	if(HMinfoTools_debug) {log('HMinfoTools: ' + cmd);}
 	var url = HMinfoTools_makeCommand(cmd);
 	$.ajax({
@@ -785,7 +791,7 @@ function HMinfoTools_parseIOsFromHMinfo(ioInfoRaw) {
 		ios = iolist.split(',');
 		ios.forEach(function(io) {
 			var color = (ioInfoRaw.match('(?:Initialized|ok):\\s[^;]*'+io+'[^;]*;'))? 'lime': 'red';
-			ioInfo = ioInfo.replace(io,'<a href="/fhem?detail='+io+'" style="color: '+color+';">'+io+'</a>');
+			ioInfo = ioInfo.replace(io,'<a href="/fhem?detail='+io+'"><span style="color: '+color+';">'+io+'</span></a>');
 		});
 	}
 	else if(ioInfoRaw != null && ioInfoRaw.match(/>/)) { //new hminfo version
@@ -805,12 +811,12 @@ function HMinfoTools_parseIOsFromHMinfo(ioInfoRaw) {
 		iolist = ios.join(',');
 		vccus.forEach(function(vccu) {
 			var color = 'lightblue';
-			if(vccu == 'noVccu') {ioInfo = ioInfo.replace(vccu,'<a style="color: '+color+';">'+vccu+'</a>');}
-			else {ioInfo = ioInfo.replace(vccu,'<a href="/fhem?detail='+vccu+'" style="color: '+color+';">'+vccu+'</a>');}
+			if(vccu == 'noVccu') {ioInfo = ioInfo.replace(vccu,'<span style="color: '+color+';">'+vccu+'</span>');}
+			else {ioInfo = ioInfo.replace(vccu,'<a href="/fhem?detail='+vccu+'"><span style="color: '+color+';">'+vccu+'</span></a>');}
 		});
 		ios.forEach(function(io) {
 			var color = (ioInfoRaw.match('(?:Initialized|ok):[^;]*'+io+'[^;]*;'))? 'lime': 'red';
-			ioInfo = ioInfo.replace(io,'<a href="/fhem?detail='+io+'" style="color: '+color+';">'+io+'</a>');
+			ioInfo = ioInfo.replace(io,'<a href="/fhem?detail='+io+'"><span style="color: '+color+';">'+io+'</span></a>');
 		});
 	}
 	else {ioInfo = 'IO_Devices: Info_Unknown';} //from fhem-restart until first hminfo-update
@@ -1090,14 +1096,17 @@ function HMinfoTools_createErrorDevicesTable(errorDevices) {
 		var tr = document.createElement('tr');
 		tbody.appendChild(tr);
 		tr.id = 'hminfo_devRow_' + device;
-		if(z%2 != 0) {tr.setAttribute('class','even');}
-		else {tr.setAttribute('class','odd');}
+		//if(z%2 != 0) {tr.setAttribute('class','even');}
+		//else {tr.setAttribute('class','odd');}
+		if(z%2 != 0) {tr.style.backgroundColor = '#333333';}
+		else {tr.style.backgroundColor = '#111111';}
 		var td = document.createElement('td');
 		tr.appendChild(td);
 		HMinfoTools_createIconCells(td,device); //###############################################
 		var td = document.createElement('td');
 		tr.appendChild(td);
-		td.innerHTML = '<a href="/fhem?detail=' +device+ '">' +device+ '</a>';
+		var color = '#CCCCCC';
+		td.innerHTML = '<a href="/fhem?detail=' +device+ '"><span style="color: '+color+';">' +device+ '</span></a>';
 		var td = document.createElement('td');
 		tr.appendChild(td);
 		var errors = devMap.get(device).errors;
@@ -1120,6 +1129,7 @@ function HMinfoTools_loadIcons(device,td) {
 		var iconCell = document.createElement('span');
 		td.appendChild(iconCell);
 		iconCell.id = 'icon_' +iconName+ '_hminfo';
+		//iconCell.style.margin = '0px 0px 0px 0px';
 		if(isHMinfo && click != '') {
 			iconCell.style.cursor = 'pointer';
 			iconCell.title = 'on click => set ' +hminfo+ ' ' +click;
@@ -1169,6 +1179,11 @@ function HMinfoTools_clickSetFunctionG(hminfo,click) { //set hminfo click functi
 }
 
 function HMinfoTools_createIconCells(td,device) {
+	/*
+	var dummy = document.createElement('span');
+	td.appendChild(dummy);
+	dummy.innerHTML = ' ';
+	*/
 	for(var i = 0; i < HMinfoTools_icons.length; ++i) {
 		var iconName = HMinfoTools_icons[i].name;
 		var iconPoll = HMinfoTools_icons[i].poll;
@@ -1176,6 +1191,7 @@ function HMinfoTools_createIconCells(td,device) {
 		var iconCell = document.createElement('span');
 		td.appendChild(iconCell);
 		iconCell.id = 'icon_' +iconName+ '_' + device;
+		//iconCell.style.margin = '0px 0px 0px 0px';
 		if(iconClick != '' && iconName != 'cfgState' && iconName != 'battery' && iconName != 'sabotageAttack') { //only if icons exist on any devices
 			iconCell.style.cursor = 'pointer';
 			iconCell.setAttribute('onclick',iconClick +"('"+ device + "')");

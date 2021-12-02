@@ -1,4 +1,4 @@
-FW_version["HMdeviceTools.js"] = "$Id: HMdeviceTools.js 1001 2021-11-22 18:00:00Z frank $";
+FW_version["HMdeviceTools.js"] = "$Id: HMdeviceTools.js 1002 2021-12-02 18:00:00Z frank $";
 
 var HMdeviceTools_debug = true;
 var csrf;
@@ -55,43 +55,43 @@ function HMdeviceTools_createRegisterTable(object,isParentDev) {
   div.setAttribute('parentDev',((isParentDev)? object.Internals.NAME: object.Internals.device));
 	div.setAttribute('iolist',((isParentDev)? object.Internals.IODev: ''));
 	div.setAttribute('model',object.Attributes.model);
-  //tab.setAttribute('class','makeTable wide');
   div.setAttribute('class','makeTable wide internals');
 	HMdeviceTools_checkHminfo(object.Internals.NAME); //check if hminfo is running and set attribute "hminfo"
-  var header = document.createElement('span');
+
+  //title
+	var header = intdiv.firstElementChild.cloneNode(false);
   div.appendChild(header);
-  //header.setAttribute('class','col_header pinHeader');
-  header.setAttribute('class','mkTitle');
   header.innerHTML = 'HMdeviceTools';
+
+	//table
   var table = document.createElement('table');
   div.appendChild(table);
-  //table.setAttribute('class','block wide internals wrapcolumns');
   table.setAttribute('class','block wide internals');
+	table.style.backgroundColor = '#333333';
+	table.style.color = '#CCCCCC';
   var tbody = document.createElement('tbody');
   table.appendChild(tbody);
+	tbody.style.backgroundColor = '#111111';
   var tr = document.createElement('tr');
   tbody.appendChild(tr);
-  tr.setAttribute('class','odd');
 
 	//dummy icons
   var td = document.createElement('td');
   tr.appendChild(td);
 	td.id = 'HMdeviceTools_toolsTable_svg';
 	td.hidden = true;
-	//td.style.whiteSpace = 'nowrap';
-	//td.style.width = '200px';
 
 	//icons
   var td = document.createElement('td');
   tr.appendChild(td);
 	td.id = 'HMdeviceTools_toolsTable_icons';
 	td.style.whiteSpace = 'nowrap';
-	td.style.width = '200px';
+	td.style.width = '210px'; //
 	
 	//link device registerset
   var td = document.createElement('td');
   tr.appendChild(td);
-	var list = document.createElement('a');
+	var list = document.createElement('span');
 	td.appendChild(list);
 	list.id = 'HMdeviceTools_reg_link_dev';
 	list.innerHTML = 'Device';
@@ -99,9 +99,9 @@ function HMdeviceTools_createRegisterTable(object,isParentDev) {
 	list.setAttribute('device',object.Internals.NAME);
 	list.setAttribute('model',object.Attributes.model);
 	list.setAttribute('onclick',"HMdeviceTools_changeRegister('" + object.Internals.NAME + "','')");
-	list.style.margin = '2px 20px 2px 20px';
+	list.style.margin = '0px 10px 0px 0px';
 	list.style.cursor = 'pointer';
-	list.style.color = (object.Readings.tmpl_0 != null)? 'yellow': 'white';
+	list.style.color = (object.Readings.tmpl_0 != null)? 'yellow': '#CCCCCC';
 	//if device has peers - create a button for every peer
 	if(object.Internals.peerList != null) {
 		var peers = object.Internals.peerList.split(',');
@@ -112,17 +112,17 @@ function HMdeviceTools_createRegisterTable(object,isParentDev) {
 			if(p.length > 0) {
 				var mSpecial = readings.match('R-' +p+ '_chn-01-');
 				var suffix = (mSpecial != null)? '_chn-01': '';
-				list = document.createElement('a');
+				list = document.createElement('span');
 				td.appendChild(list);
 				list.id = 'HMdeviceTools_reg_link_' + p;
 				list.innerHTML = p;
 				if(peerIsExtern) {list.setAttribute('peersuffix',suffix);}
 				list.setAttribute('onclick',"HMdeviceTools_changeRegister('" + object.Internals.NAME + "','" +p+ "')");
-				list.style.margin = '2px 20px 2px 20px';
+				list.style.margin = '0px 10px 0px 0px';
 				list.style.cursor = 'pointer';
 				//var mReadings = readings.match('tmpl_' +p+suffix+ ':');
 				var mReadings = readings.match('tmpl_' +p+ ':');
-				list.style.color = (mReadings != null)? 'yellow': 'white';
+				list.style.color = (mReadings != null)? 'yellow': '#CCCCCC';
 			}
 		}
 	}
