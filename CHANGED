@@ -1,3 +1,4 @@
+2021.12.02 updates HMdeviceTools.js and HMinfoTools.js
 2021.11.29 added HMdeviceTools.js and HMinfoTools.js
 2021.07.05 added 55_Shinobi* Modules (More Info FHEM-Forum: https://forum.fhem.de/index.php/topic,116269.msg1105431.html
 2020.08.03 removed 96_Snapcast.pm, updated version was checked in to official fhem repo now from rudolf
